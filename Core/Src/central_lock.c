@@ -2,8 +2,10 @@
 
 static volatile LockState_t CurrentLockState;
 static volatile LockState_t PrevLockState;
-static volatile uint8_t CodeBuffer[CODE_LENGTH];
-static volatile uint8_t currentSequenceNumber = 0;
+static uint8_t CodeBuffer[CODE_LENGTH];
+static volatile uint16_t CurrentSequenceNumber = 0;
+// static const uint16_t MaxSequenceNumber = 1000;
+static const uint16_t MaxErrorInSequenceNumber = 99;
 static const uint8_t CodeHeaders[4] = { 0b01010101, 0b10101010, 0b00001111,
 		0b11110000 };
 extern UART_HandleTypeDef huart1;
@@ -45,8 +47,7 @@ void CentralLock_LockDoors(CentralLock_t *CentralLock) {
 }
 
 void CentralLock_ReceiveCodeNonBlocking() {
-	uint8_t srquenceNum = CentralLock_GetCurSequenceNum();
-	HAL_UART_Receive_IT(&huart1, CodeBuffer + srquenceNum, CODE_LENGTH);
+	HAL_UART_Receive_IT(&huart1, CodeBuffer, CODE_LENGTH);
 }
 
 LockState_t CentralLock_GetCurrentLockState() {
@@ -63,16 +64,13 @@ void CentralLock_SetPrevLockState(LockState_t PrevState) {
 	PrevLockState = PrevState;
 }
 
-uint8_t CentralLock_GetCurSequenceNum() {
-	return currentSequenceNumber;
-}
 void CentralLock_IncCurSequenceNum() {
-	currentSequenceNumber++;
-	currentSequenceNumber %= CODE_LENGTH;
+	CurrentSequenceNumber++;
+	CurrentSequenceNumber %= CODE_LENGTH;
 }
 
 void CentralLock_RstCurSequenceNum() {
-	currentSequenceNumber = 0;
+	CurrentSequenceNumber = 0;
 }
 uint8_t CentralLock_GetCodePortion(uint8_t portion) {
 	return CodeBuffer[portion];
@@ -97,5 +95,27 @@ CodeStatus_t CentralLock_GetCodeStatus() {
 			}
 		}
 	}
+	uint16_t decryptedSequenceNumber = CentralLock_DecryptCode();
+	if (ABS(decryptedSequenceNumber - CurrentSequenceNumber)
+			> MaxErrorInSequenceNumber) {
+		return OUT_OF_RANGE;
+	} else {
+		CentralLock_UpdateCurrentSequenceNum(decryptedSequenceNumber);
+	}
+	return VALID;
 }
 
+static uint16_t CentralLock_GetCurrentSequenceNum() {
+	return CurrentSequenceNumber;
+}
+static void CentralLock_UpdateCurrentSequenceNum(uint16_t newSequenceNumber) {
+	CurrentSequenceNumber = newSequenceNumber;
+}
+
+static uint16_t CentralLock_DecryptCode() {
+	uint16_t decryptedCode = 0;
+	decryptedCode = CodeBuffer[2];
+	decryptedCode = decryptedCode << CODE_LENGTH;
+	decryptedCode = decryptedCode | CodeBuffer[3];
+	return decryptedCode;
+}

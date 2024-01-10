@@ -12,6 +12,7 @@
 #include "time.h"
 
 #define CODE_LENGTH 6
+#define ABS(x) ((x)>0?(x):-(x))
 
 typedef struct {
 	GPIO_TypeDef *GPIOx_Doors_Port;
@@ -24,7 +25,7 @@ typedef enum {
 } LockState_t;
 
 typedef enum {
-	VALID, UNVALID
+	VALID, UNVALID, OUT_OF_RANGE
 } CodeStatus_t;
 
 void CentralLock_Init(CentralLock_t *CentralLock);
@@ -44,4 +45,7 @@ uint8_t CentralLock_GetCodeHeader(uint8_t header);
 void CentralLock_OpenDoors(CentralLock_t *CentralLock);
 void CentralLock_ClearCodeBuffer();
 CodeStatus_t CentralLock_GetCodeStatus();
+static uint16_t CentralLock_GetCurrentSequenceNum();
+static void CentralLock_UpdateCurrentSequenceNum(uint16_t newSequenceNumber);
+static uint16_t CentralLock_DecryptCode();
 #endif /* INC_CENTRAL_LOCK_H_ */

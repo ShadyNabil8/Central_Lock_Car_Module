@@ -32,7 +32,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ABS(x) ((x)>0?(x):-(x))
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,16 +51,12 @@ volatile uint32_t lastDebounceTime = 0;
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int debug = 0;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern UART_HandleTypeDef huart1;
 extern CentralLock_t CentralLock;
 /* USER CODE BEGIN EV */
-extern UART_HandleTypeDef huart1;
-extern volatile LockState_t LockState;
-extern volatile uint8_t receivedBytes;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -236,7 +231,6 @@ void USART1_IRQHandler(void) {
 	/*
 	 * This Function is triggered each time a byte is received.
 	 */
-	debug++;
 	/* USER CODE END USART1_IRQn 1 */
 }
 
@@ -282,6 +276,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 //	//CentralLock_IncCurSequenceNum();
 	CodeStatus_t status = CentralLock_GetCodeStatus();
 	if (status == VALID) {
+		CentralLock_UnlockDoors(&CentralLock);
+	} else if (status == OUT_OF_RANGE) {
+	} else if (status == UNVALID) {
 
 	} else {
 	}
