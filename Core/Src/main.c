@@ -46,8 +46,8 @@
 /* USER CODE BEGIN PV */
 extern UART_HandleTypeDef huart1;
 CentralLock_t CentralLock;
-extern LockState_t LockState;
-extern LockState_t TempLockState;
+extern volatile uint8_t receivedByte;
+volatile uint16_t currentSeqNumber = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,7 +58,11 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint16_t Decrypt(uint16_t code) {
+	code &= 0xFFF0;
+	code = code >> 4;
+	return code;
+}
 /* USER CODE END 0 */
 
 /**
@@ -67,7 +71,8 @@ void SystemClock_Config(void);
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-
+	LockState_t CurrentLockState;
+	LockState_t PrevLockState;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -100,11 +105,13 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		if (TempLockState != LockState) {
-			HAL_UART_Transmit(&huart1, "LOOP", 5, 5);
-			TempLockState = LockState;
-			CentralLock_DoorChangeState(&CentralLock, LockState);
+		CurrentLockState = CentralLock_GetCurrentLockState();
+		PrevLockState = CentralLock_GetPrevLockState();
+		if (CurrentLockState != PrevLockState) {
+			CentralLock_SetPrevLockState(CurrentLockState);
+			CentralLock_DoorChangeState(&CentralLock, CurrentLockState);
 		}
+
 	}
 	/* USER CODE END 3 */
 }
@@ -122,7 +129,11 @@ void SystemClock_Config(void) {
 	 */
 	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
 	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+	RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL2;
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
 		Error_Handler();
 	}
@@ -131,7 +142,7 @@ void SystemClock_Config(void) {
 	 */
 	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
 			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
