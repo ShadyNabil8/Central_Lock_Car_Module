@@ -1,9 +1,11 @@
 #include "central_lock.h"
+#include  <stdbool.h>
 
 static volatile LockState_t CurrentLockState;
 static volatile LockState_t PrevLockState;
 static uint8_t CodeBuffer[CODE_LENGTH];
 static volatile uint16_t CurrentSequenceNumber = 0;
+bool LockStateChanged = false;
 // static const uint16_t MaxSequenceNumber = 1000;
 static const uint16_t MaxErrorInSequenceNumber = 99;
 static const uint8_t CodeHeaders[4] = { 0b01010101, 0b10101010, 0b00001111,
@@ -18,32 +20,21 @@ void CentralLock_Init(CentralLock_t *CentralLock) {
 
 	CurrentLockState = LOCKED;
 	PrevLockState = LOCKED;
+	LockStateChanged = false;
 
 	CentralLock_ReceiveCodeNonBlocking();
 }
 
-void CentralLock_DoorChangeState(CentralLock_t *CentralLock, LockState_t state) {
-	if (state == UNLOCKED)
-		CentralLock_UnlockDoors(CentralLock);
-	else if (state == LOCKED)
-		CentralLock_LockDoors(CentralLock);
-
-	/*
-	 * Do more stuff here if needed.
-	 */
-
-}
-
-void CentralLock_UnlockDoors(CentralLock_t *CentralLock) {
-	for (int i = 0; i < 4; i++)
-		HAL_GPIO_WritePin(CentralLock->GPIOx_Doors_Port,
-				CentralLock->GPIO_DoorArr[i], UNLOCKED);
-}
-void CentralLock_LockDoors(CentralLock_t *CentralLock) {
-
-	for (int i = 0; i < 4; i++)
-		HAL_GPIO_WritePin(CentralLock->GPIOx_Doors_Port,
-				CentralLock->GPIO_DoorArr[i], LOCKED);
+void CentralLock_DoorChangeState(CentralLock_t *CentralLock,
+		LockState_t _currentState) {
+	LockState_t _prevLockState = CentralLock_GetPrevLockState();
+	if (_prevLockState != _currentState) {
+		for (int i = 0; i < 4; i++)
+			HAL_GPIO_WritePin(CentralLock->GPIOx_Doors_Port,
+					CentralLock->GPIO_DoorArr[i], _currentState);
+		CentralLock_SetCurrentLockState(_currentState);
+		CentralLock_SetPrevLockState(_currentState);
+	}
 }
 
 void CentralLock_ReceiveCodeNonBlocking() {
@@ -57,11 +48,11 @@ LockState_t CentralLock_GetPrevLockState() {
 	return PrevLockState;
 }
 
-void CentralLock_SetCurrentLockState(LockState_t CurrentState) {
-	CurrentLockState = CurrentState;
+void CentralLock_SetCurrentLockState(LockState_t _currentLockState) {
+	CurrentLockState = _currentLockState;
 }
-void CentralLock_SetPrevLockState(LockState_t PrevState) {
-	PrevLockState = PrevState;
+void CentralLock_SetPrevLockState(LockState_t _prevLockState) {
+	PrevLockState = _prevLockState;
 }
 
 void CentralLock_IncCurSequenceNum() {
@@ -72,15 +63,13 @@ void CentralLock_IncCurSequenceNum() {
 void CentralLock_RstCurSequenceNum() {
 	CurrentSequenceNumber = 0;
 }
-uint8_t CentralLock_GetCodePortion(uint8_t portion) {
-	return CodeBuffer[portion];
+uint8_t CentralLock_GetCodePortion(uint8_t _portion) {
+	return CodeBuffer[_portion];
 }
-uint8_t CentralLock_GetCodeHeader(uint8_t header) {
-	return CodeHeaders[header];
+uint8_t CentralLock_GetCodeHeader(uint8_t _header) {
+	return CodeHeaders[_header];
 }
-void CentralLock_OpenDoors(CentralLock_t *CentralLock) {
-	CentralLock_DoorChangeState(CentralLock, UNLOCKED);
-}
+
 void CentralLock_ClearCodeBuffer() {
 	for (int i = 0; i < CODE_LENGTH; i++) {
 		CodeBuffer[i] = '\0';
@@ -96,7 +85,8 @@ CodeStatus_t CentralLock_GetCodeStatus() {
 		}
 	}
 	uint16_t decryptedSequenceNumber = CentralLock_DecryptCode();
-	if (ABS(decryptedSequenceNumber - CurrentSequenceNumber)
+	uint16_t currentSequenceNumber = CentralLock_GetCurrentSequenceNum();
+	if (ABS(decryptedSequenceNumber - currentSequenceNumber)
 			> MaxErrorInSequenceNumber) {
 		return OUT_OF_RANGE;
 	} else {
@@ -108,8 +98,8 @@ CodeStatus_t CentralLock_GetCodeStatus() {
 static uint16_t CentralLock_GetCurrentSequenceNum() {
 	return CurrentSequenceNumber;
 }
-static void CentralLock_UpdateCurrentSequenceNum(uint16_t newSequenceNumber) {
-	CurrentSequenceNumber = newSequenceNumber;
+static void CentralLock_UpdateCurrentSequenceNum(uint16_t _newSequenceNumber) {
+	CurrentSequenceNumber = _newSequenceNumber;
 }
 
 static uint16_t CentralLock_DecryptCode() {

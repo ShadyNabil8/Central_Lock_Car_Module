@@ -105,12 +105,11 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		CurrentLockState = CentralLock_GetCurrentLockState();
-		PrevLockState = CentralLock_GetPrevLockState();
-		if (CurrentLockState != PrevLockState) {
-			CentralLock_SetPrevLockState(CurrentLockState);
-			CentralLock_DoorChangeState(&CentralLock, CurrentLockState);
-		}
+//		CurrentLockState = CentralLock_GetCurrentLockState();
+//		PrevLockState = CentralLock_GetPrevLockState();
+//		if (CurrentLockState != PrevLockState) {
+//			CentralLock_DoorChangeState(&CentralLock, CurrentLockState);
+//		}
 
 	}
 	/* USER CODE END 3 */

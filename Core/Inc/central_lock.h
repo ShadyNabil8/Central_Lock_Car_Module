@@ -29,9 +29,7 @@ typedef enum {
 } CodeStatus_t;
 
 void CentralLock_Init(CentralLock_t *CentralLock);
-void CentralLock_DoorChangeState(CentralLock_t *CentralLock, LockState_t state);
-void CentralLock_UnlockDoors(CentralLock_t *CentralLock);
-void CentralLock_LockDoors(CentralLock_t *CentralLock);
+void CentralLock_DoorChangeState(CentralLock_t *CentralLock, LockState_t currentState);
 void CentralLock_ReceiveCodeNonBlocking();
 LockState_t CentralLock_GetCurrentLockState();
 LockState_t CentralLock_GetPrevLockState();

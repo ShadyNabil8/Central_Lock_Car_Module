@@ -194,8 +194,7 @@ void EXTI0_IRQHandler(void) {
 	/* USER CODE BEGIN EXTI0_IRQn 1 */
 	uint32_t currentMillis = Millis();
 	if (ABS(currentMillis - lastDebounceTime) >= debounceDelay) {
-		HAL_GPIO_TogglePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin);
-		CentralLock_SetCurrentLockState(UNLOCKED);
+		CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
 		lastDebounceTime = currentMillis;
 	}
 	/* USER CODE END EXTI0_IRQn 1 */
@@ -212,8 +211,7 @@ void EXTI1_IRQHandler(void) {
 	/* USER CODE BEGIN EXTI1_IRQn 1 */
 	uint32_t currentMillis = Millis();
 	if (ABS(currentMillis - lastDebounceTime) >= debounceDelay) {
-		HAL_GPIO_TogglePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin);
-		CentralLock_SetCurrentLockState(LOCKED);
+		CentralLock_DoorChangeState(&CentralLock, LOCKED);
 		lastDebounceTime = currentMillis;
 	}
 	/* USER CODE END EXTI1_IRQn 1 */
@@ -245,38 +243,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	/*
 	 * This Function is triggered only when all data are received.
 	 */
-//	uint8_t sequenceNumber = CentralLock_GetCurSequenceNum();
-//	uint8_t codePortion = CentralLock_GetCodePortion(sequenceNumber);
-//	// This mean we receive a header not a real code.
-//	if (sequenceNumber == 0x0 || sequenceNumber == 0x01
-//			|| sequenceNumber == 0x04 || sequenceNumber == 0x05) {
-//		uint8_t codeHeader = CentralLock_GetCodeHeader(sequenceNumber);
-//		// This means that the received byte is a header and also a correct header in sequence.
-//		if (codeHeader == codePortion) {
-//			HAL_UART_Transmit(&huart1, &codeHeader, 1, 5);
-//			// If the received code portion is the last portion of a code, then we received all the code correctly.
-//			if (sequenceNumber == 0x05) {
-//				CentralLock_UnlockDoors(&CentralLock);
-//			}
-//			CentralLock_IncCurSequenceNum();
-//		}
-//		// If the header received was not in correct sequence.
-//		else {
-//			CentralLock_RstCurSequenceNum();
-//			// Send something
-//		}
-//
-//	}
-//	// We receive a real code.
-//	else {
-//		CentralLock_IncCurSequenceNum();
-//		HAL_UART_Transmit(&huart1, &codePortion, 1, 5);
-//
-//	}
-//	//CentralLock_IncCurSequenceNum();
 	CodeStatus_t status = CentralLock_GetCodeStatus();
 	if (status == VALID) {
-		CentralLock_UnlockDoors(&CentralLock);
+		CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
 	} else if (status == OUT_OF_RANGE) {
 	} else if (status == UNVALID) {
 
