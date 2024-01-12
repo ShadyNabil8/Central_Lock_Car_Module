@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "central_lock.h"
+#include "HAL_flash.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,8 +72,11 @@ uint16_t Decrypt(uint16_t code) {
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-	LockState_t CurrentLockState;
-	LockState_t PrevLockState;
+	//uint8_t data[7] = { 's', 'h', 'a', 'd', 'y', 'n', 'b' };
+	//HAL_StoreToFlash(data, 7, 0x0801FC20);
+	uint8_t GET[7] = { 0 };
+	HAL_ReadFromFlash(GET, 7, 0x0801FC20);
+
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -105,12 +109,8 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-//		CurrentLockState = CentralLock_GetCurrentLockState();
-//		PrevLockState = CentralLock_GetPrevLockState();
-//		if (CurrentLockState != PrevLockState) {
-//			CentralLock_DoorChangeState(&CentralLock, CurrentLockState);
-//		}
-
+		//HAL_FLASH_Unlock()
+		//HAL_FLASH_Program(TypeProgram, Address, Data);
 	}
 	/* USER CODE END 3 */
 }
