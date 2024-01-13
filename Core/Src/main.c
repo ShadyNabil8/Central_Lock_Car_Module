@@ -72,10 +72,10 @@ uint16_t Decrypt(uint16_t code) {
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-	//uint8_t data[7] = { 's', 'h', 'a', 'd', 'y', 'n', 'b' };
-	//HAL_StoreToFlash(data, 7, 0x0801FC20);
-	uint8_t GET[7] = { 0 };
-	HAL_ReadFromFlash(GET, 7, 0x0801FC20);
+	uint8_t data[6] = { 'a', 'b', 'c', 'd', 'e', 'f'};
+	HAL_FlashStoreData(data, 6, 0x0801FC00);
+	uint8_t GET[6] = { 0 };
+	HAL_FlashReadData(GET, 7, 0x0801FC00);
 
 	/* USER CODE END 1 */
 

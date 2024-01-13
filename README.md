@@ -1,5 +1,11 @@
 # Chalenges
 
+
+
+
+Write that you debigged so much
+
+
 ## Syncrhonozation between TX and RX
 
 When I tried to use this function ```HAL_UART_Receive_IT(&huart1, CodeBuffer, CODE_LENGTH);``` to receive the 6 bytes from the key, I encountered a problem. If there is an error while sending, like a byte didn't reach the RX UART, For example, if this byte is the 3rd byte, Then the 4th byte will be placed in the location of the 3rd byte. This is the problem. So I can't depend on this feature from the provided UART driver, and I should receive each byte alone and use the sequence numbers mechanism to check if the incomming byte is the write byte or not, and if so, I will place it in its right location. If it was not the expected byte, I will reset the sequence.
