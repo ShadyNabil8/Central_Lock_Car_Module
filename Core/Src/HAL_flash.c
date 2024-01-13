@@ -111,7 +111,7 @@ void HAL_FlashReadData(uint8_t *_destDataAddress, uint32_t _numberOfBytes,
  * @brief  Erase Flash Memory Pages
  * @note   This function initiates the erasure of specified pages in the Flash memory of an STM32 microcontroller.
  *         It utilizes the Hardware Abstraction Layer (HAL) provided by STMicroelectronics.
- * @param  _typeErase: Type of erasure, .
+ * @param  _typeErase: Type of erasure (Mass erase or page erase).
  * @param  _eraseStartAddress: Starting address in Flash memory where the erasure will commence.
  * @param  _numOfPages: Number of consecutive Flash memory pages to be erased.
  * @retval HAL_StatusTypeDef: Status of the last Flash erase operation.

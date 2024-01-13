@@ -1,10 +1,12 @@
-# Chalenges
+# I Learned more about
 
+## Debugging
 
+I needed to use the dubugging feature all the time to see the data in different buffers and monitor the variables and the return status of different operations. And that makes it easier to discover any errors that occurred during the development. Also, it helped me to see the content of the registers to be aware of the current state of the MCU and check if the change that I made took place or not. The debugging was very helpful for me in this project.
 
+## Dealing with flash memory in STM32F103C8T6 and Arduino UNO
 
-Write that you debigged so much
-
+# The challenges I faced
 
 ## Syncrhonozation between TX and RX
 
