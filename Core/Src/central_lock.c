@@ -1,17 +1,43 @@
 #include "central_lock.h"
 #include  <stdbool.h>
 
+/* Section Variables -------------------------------------------------------------*/
+
+/*! <Variable to carry the current lock state of the car (locked or unlocked)>*/
 static volatile LockState_t CurrentLockState;
+
+/*! <Variable to carry the previous lock state of the car (locked or unlocked)>*/
 static volatile LockState_t PrevLockState;
+
+/*! <Variable to carry the number of lock/unlock operations since the module is on>*/
+static volatile uint8_t NpOperations = 0;
+
+/*! <Variable to carry the maximum number of lock/unlock operation before storing the sequence number in the flash memory>*/
+static volatile const uint8_t MaxNpOperations = 5;
+
+/*! <Buffer to store the code for further processing>*/
 static uint8_t CodeBuffer[CODE_LENGTH];
+
+/*! <Variable to carry the current sequence number that is synchronized with the car key>*/
 static volatile uint16_t CurrentSequenceNumber = 0;
-bool LockStateChanged = false;
-// static const uint16_t MaxSequenceNumber = 1000;
+
+/*! <If the difference between the sequence number fetcher from the car key and the current sequence number is
+ * greater than 99, then the code is not valid and the module will not unlock the car for security purpose,
+ * or the car key and the module need to be reprogrammed. by the car owner in case of key is pressed frequently far from the car.
+ * This logic is used to secure the car against the hacking if someone tried to send a random code.
+ * >*/
 static const uint16_t MaxErrorInSequenceNumber = 99;
+
+/*! <Headers that are used in the checking of the code process>*/
 static const uint8_t CodeHeaders[4] = { 0b01010101, 0b10101010, 0b00001111,
 		0b11110000 };
+
+/*! <UART module to receive the code>*/
 extern UART_HandleTypeDef huart1;
+
+/* Section Functions implementation -------------------------------------------------------------*/
 void CentralLock_Init(CentralLock_t *CentralLock) {
+	/*!<Central lock module pin configuration>*/
 	CentralLock->GPIOx_Doors_Port = GPIOB;
 	CentralLock->GPIO_DoorArr[0] = GPIO_PIN_12;
 	CentralLock->GPIO_DoorArr[1] = GPIO_PIN_13;
@@ -20,8 +46,17 @@ void CentralLock_Init(CentralLock_t *CentralLock) {
 
 	CurrentLockState = LOCKED;
 	PrevLockState = LOCKED;
-	LockStateChanged = false;
 
+	/*!<First, fetch the old sequence number from the flash memory>*/
+	uint8_t fetchOldCodeBuffer[SEQUENCE_NUMBER_LENGTH] = { 0 };
+	HAL_FlashReadData(fetchOldCodeBuffer, SEQUENCE_NUMBER_LENGTH,
+	FLASH_START_ADDRESS);
+	uint16_t oldCode = fetchOldCodeBuffer[1];
+	oldCode = oldCode << FLASH_BYTE_SIZE;
+	oldCode |= fetchOldCodeBuffer[0];
+	CurrentSequenceNumber = oldCode;
+
+	/*!<Start receiving data>*/
 	CentralLock_ReceiveCodeNonBlocking();
 }
 
@@ -35,6 +70,14 @@ void CentralLock_DoorChangeState(CentralLock_t *CentralLock,
 		CentralLock_SetCurrentLockState(_currentState);
 		CentralLock_SetPrevLockState(_currentState);
 	}
+
+	NpOperations++;
+
+	if (NpOperations >= MaxNpOperations)
+		HAL_FlashStoreData(CodeBuffer + SEQUENCE_NUMBER_LENGTH,
+		SEQUENCE_NUMBER_LENGTH, FLASH_START_ADDRESS);
+
+	NpOperations %= MaxNpOperations;
 }
 
 void CentralLock_ReceiveCodeNonBlocking() {
@@ -104,8 +147,9 @@ static void CentralLock_UpdateCurrentSequenceNum(uint16_t _newSequenceNumber) {
 
 static uint16_t CentralLock_DecryptCode() {
 	uint16_t decryptedCode = 0;
-	decryptedCode = CodeBuffer[2];
-	decryptedCode = decryptedCode << CODE_LENGTH;
-	decryptedCode = decryptedCode | CodeBuffer[3];
+	decryptedCode = CodeBuffer[SECOND_BYTE_IN_SEQ_NUM];
+	decryptedCode = decryptedCode << FLASH_BYTE_SIZE;
+	decryptedCode = decryptedCode | CodeBuffer[FIRST_BYTE_IN_SEQ_NUM];
 	return decryptedCode;
 }
+

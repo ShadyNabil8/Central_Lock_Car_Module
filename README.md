@@ -1,10 +1,34 @@
+# Central Locking System
+
+1. **Purpose and benefit:**
+
+   - Vehicle Central locking has the sole purpose of ```locking or unlocking``` all the doors in the car at the same time, via a ```remote``` or when the ```driver door locks```. It is a convenience feature, as well as a safety and security feature.
+
+2. **How does a central locking system work :**
+
+   - Central locking works on the basis of key codes and radio waves. In simple terms, the working of a central locking system can be explained like this - The car key acts as a transmitter and the car acts as a receiver. Whenever there is a command from the key, the car would respond to it. However, only if the codes of the receiver and transmitter match, will the car respond to the command.
+
+   - Also, if the car is locked using the key, the immobiliser goes off. The immobiliser is a safety device in engines to prevent the car from being stolen by turning off the engine on the command of the transmitter, or the key.
+
+4. **Auto-lock:**
+
+   - This feature is a safety measure taken by automobile companies. This feature locks all the doors of the car, as soon as the first gear is engaged, so that young children don’t accidentally open the door while the car is not stationery.
+
+   - However, not all cars have this feature. Some cars have speed sensing door locks, which is essentially the same thing, but the doors are locked when the car breaches a defined speed. Generally, the defined speed is 10 km/h, or around 6 m/h.
+
 # I Learned more about
 
-## Debugging
+## 1. Debugging
 
 I needed to use the dubugging feature all the time to see the data in different buffers and monitor the variables and the return status of different operations. And that makes it easier to discover any errors that occurred during the development. Also, it helped me to see the content of the registers to be aware of the current state of the MCU and check if the change that I made took place or not. The debugging was very helpful for me in this project.
 
-## Dealing with flash memory in STM32F103C8T6 and Arduino UNO
+## 2. Dealing with flash memory in STM32F103C8T6 and Arduino UNO
+
+In a stage in the code, I nedded to use the flash memory in STM32F103C8T (STM32F103C8T6 does not have an EEPRM) and the EEPROM in Arduino. So I developed a ```HAL_flash``` module (.c and.h) for the STM32F103C8T6 to make it easier to use the permanent storage. This module provides the basic flash functions like read, write and erase. In Arduino, the module already exists in the arduino framework.
+
+## 3. SysTick timer in STM32F103C8T6
+
+I needed a stage in the code to know the time according to the processor, so after sailing through the STM32F103C8T6 drivers provided by STM and some searching, I found that I could use the SysTick timer to know the time according to the processor.
 
 # The challenges I faced
 
@@ -24,7 +48,7 @@ But this function is built-in in the Arduino framework.
 
 ## Difference in operatin voltages in the two UART modules
 
-I am using the STM32F108C8T6, which operates at 3.3V, and the Arduino UNO, which operates at 5V. But they work together normally in serial communication without any problems.
+I am using the STM32F108C8T6, which operates at 3.3V, and the Arduino UNO, which operates at 5V. So by logic in need a level shifter to shift the 5V to 3.3V, but they work together normally in serial communication without any problems.
 
 ## Store data permanently
 

@@ -59,11 +59,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t Decrypt(uint16_t code) {
-	code &= 0xFFF0;
-	code = code >> 4;
-	return code;
-}
+
 /* USER CODE END 0 */
 
 /**
@@ -72,10 +68,6 @@ uint16_t Decrypt(uint16_t code) {
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-	uint8_t data[6] = { 'a', 'b', 'c', 'd', 'e', 'f'};
-	HAL_FlashStoreData(data, 6, 0x0801FC00);
-	uint8_t GET[6] = { 0 };
-	HAL_FlashReadData(GET, 7, 0x0801FC00);
 
 	/* USER CODE END 1 */
 
@@ -109,8 +101,7 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		//HAL_FLASH_Unlock()
-		//HAL_FLASH_Program(TypeProgram, Address, Data);
+
 	}
 	/* USER CODE END 3 */
 }
