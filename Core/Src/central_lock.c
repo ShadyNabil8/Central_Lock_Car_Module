@@ -2,56 +2,34 @@
 
 /* Section Variables -------------------------------------------------------------*/
 
-/*! <Variable to carry the current lock state of the car (locked or unlocked)>*/
-static volatile LockState_t CurrentLockState;
-
-/*! <Variable to carry the previous lock state of the car (locked or unlocked)>*/
-static volatile LockState_t PrevLockState;
-
-/*! <Variable to indicate if the code is sent or not>*/
-volatile bool CodeReceived = false;
-
-/*! <Variable to carry the number of lock/unlock operations since the module is on>*/
-static volatile uint8_t NpOperations = 0;
-
-/*! <Variable to carry the maximum number of lock/unlock operation before storing the sequence number in the flash memory>*/
-static volatile const uint8_t MaxNpOperations = 20;
-
-/*! <Buffer to store the code for further processing>*/
-static uint8_t CodeBuffer[CODE_LENGTH];
-
-/*! <Variable to carry the current sequence number that is synchronized with the car key>*/
-static volatile uint16_t CurrentSequenceNumber = 0;
-
-/*! <If the difference between the sequence number fetcher from the car key and the current sequence number is
- * greater than 99, then the code is not valid and the module will not unlock the car for security purpose,
- * or the car key and the module need to be reprogrammed. by the car owner in case of key is pressed frequently far from the car.
- * This logic is used to secure the car against the hacking if someone tried to send a random code.
- * >*/
-static const uint16_t MaxErrorInSequenceNumber = 99;
-
 /*! <Headers that are used in the checking of the code process>*/
 static const uint8_t CodeHeaders[4] = { 0b01010101, 0b10101010, 0b00001111,
 		0b11110000 };
-
-volatile PowerMode_t PowerMode = SLEEP;
 
 /*! <UART module to receive the code>*/
 extern UART_HandleTypeDef huart1;
 
 /* Section Functions implementation -------------------------------------------------------------*/
-void CentralLock_Init(CentralLock_t *CentralLock) {
+void CentralLock_Init(CentralLock_t *_centralLock) {
 	/*!<Central lock module pin configuration>*/
-	CentralLock->GPIOx_Doors_Port = GPIOB;
-	CentralLock->GPIO_DoorArr[0] = GPIO_PIN_12;
-	CentralLock->GPIO_DoorArr[1] = GPIO_PIN_13;
-	CentralLock->GPIO_DoorArr[2] = GPIO_PIN_14;
-	CentralLock->GPIO_DoorArr[3] = GPIO_PIN_15;
+	_centralLock->GPIOx_Doors_Port = GPIOB;
+	_centralLock->GPIO_DoorArr[0] = GPIO_PIN_12;
+	_centralLock->GPIO_DoorArr[1] = GPIO_PIN_13;
+	_centralLock->GPIO_DoorArr[2] = GPIO_PIN_14;
+	_centralLock->GPIO_DoorArr[3] = GPIO_PIN_15;
 
 	/*! <We should here check the door if it is locked or not> */
 	/*! <But for now it will be like this untill I get more HW> */
-	CurrentLockState = LOCKED;
-	PrevLockState = LOCKED;
+	_centralLock->CurrentLockState = LOCKED;
+	_centralLock->PrevLockState = LOCKED;
+	/*! <The current power state of the central lock module> */
+	_centralLock->PowerMode = AWAKE;
+	_centralLock->CodeReceived = false;
+
+	_centralLock->MaxErrorInSequenceNumber = 100;
+
+	_centralLock->NpOperations = 0;
+	_centralLock->MaxNpOperations = 5;
 
 	/*!<First, fetch the old sequence number from the flash memory>*/
 	uint8_t fetchOldCodeBuffer[SEQUENCE_NUMBER_LENGTH] = { 0 };
@@ -60,111 +38,93 @@ void CentralLock_Init(CentralLock_t *CentralLock) {
 	uint16_t oldCode = fetchOldCodeBuffer[1];
 	oldCode = oldCode << FLASH_BYTE_SIZE;
 	oldCode |= fetchOldCodeBuffer[0];
-	CurrentSequenceNumber = oldCode;
-
-	CodeReceived = false;
-
-	/*! <The current power state of the central lock module> */
-	PowerMode = AWAKE;
+	_centralLock->CurrentSequenceNumber = oldCode;
 
 	/*!<Start receiving data>*/
-	CentralLock_ReceiveCodeNonBlocking();
+	CentralLock_ReceiveCodeNonBlocking(_centralLock);
 }
 
-void CentralLock_DoorChangeState(CentralLock_t *CentralLock,
-		LockState_t _currentState) {
+void CentralLock_DoorChangeState(CentralLock_t *_centralLock,
+		LockState_t _currentState, StateChangeSource_t _stateChangeSource) {
 
 	for (int i = 0; i < 4; i++)
-		HAL_GPIO_WritePin(CentralLock->GPIOx_Doors_Port,
-				CentralLock->GPIO_DoorArr[i], _currentState);
+		HAL_GPIO_WritePin(_centralLock->GPIOx_Doors_Port,
+				_centralLock->GPIO_DoorArr[i], _currentState);
 
-	CentralLock_SetCurrentLockState(_currentState);
-	CentralLock_SetPrevLockState(_currentState);
+	CentralLock_SetCurrentLockState(_centralLock, _currentState);
+	CentralLock_SetPrevLockState(_centralLock, _currentState);
 
-	NpOperations++;
+	if (_stateChangeSource == KEYLESS) {
+		_centralLock->NpOperations++;
 
-	if (NpOperations >= MaxNpOperations)
-		HAL_FlashStoreData(CodeBuffer + SEQUENCE_NUMBER_LENGTH,
-		SEQUENCE_NUMBER_LENGTH, FLASH_START_ADDRESS);
+		if (_centralLock->NpOperations >= _centralLock->MaxNpOperations)
+			HAL_FlashStoreData(
+					_centralLock->CodeBuffer + SEQUENCE_NUMBER_LENGTH,
+					SEQUENCE_NUMBER_LENGTH, FLASH_START_ADDRESS);
 
-	NpOperations %= MaxNpOperations;
+		_centralLock->NpOperations %= _centralLock->MaxNpOperations;
+	}
 
 }
 
-void CentralLock_ReceiveCodeNonBlocking() {
-	HAL_UART_Receive_IT(&huart1, CodeBuffer, CODE_LENGTH);
+void CentralLock_ReceiveCodeNonBlocking(CentralLock_t *_centralLock) {
+	HAL_UART_Receive_IT(&huart1, _centralLock->CodeBuffer, CODE_LENGTH);
 }
 
-LockState_t CentralLock_GetCurrentLockState() {
-	return CurrentLockState;
+void CentralLock_SetCurrentLockState(CentralLock_t *_centralLock,
+		LockState_t _currentLockState) {
+	_centralLock->CurrentLockState = _currentLockState;
 }
-LockState_t CentralLock_GetPrevLockState() {
-	return PrevLockState;
+void CentralLock_SetPrevLockState(CentralLock_t *_centralLock,
+		LockState_t _prevLockState) {
+	_centralLock->PrevLockState = _prevLockState;
+
 }
 
-void CentralLock_SetCurrentLockState(LockState_t _currentLockState) {
-	CurrentLockState = _currentLockState;
-}
-void CentralLock_SetPrevLockState(LockState_t _prevLockState) {
-	PrevLockState = _prevLockState;
-}
-
-void CentralLock_IncCurSequenceNum() {
-	CurrentSequenceNumber++;
-	CurrentSequenceNumber %= CODE_LENGTH;
-}
-
-void CentralLock_RstCurSequenceNum() {
-	CurrentSequenceNumber = 0;
-}
-uint8_t CentralLock_GetCodePortion(uint8_t _portion) {
-	return CodeBuffer[_portion];
-}
-uint8_t CentralLock_GetCodeHeader(uint8_t _header) {
-	return CodeHeaders[_header];
-}
-
-void CentralLock_ClearCodeBuffer() {
+void CentralLock_ClearCodeBuffer(CentralLock_t *_centralLock) {
 	for (int i = 0; i < CODE_LENGTH; i++) {
-		CodeBuffer[i] = '\0';
+		_centralLock->CodeBuffer[i] = '\0';
 	}
 }
-CodeStatus_t CentralLock_GetCodeStatus() {
+
+CodeStatus_t CentralLock_GetCodeStatus(CentralLock_t *_centralLock) {
 	for (int i = 0; i < CODE_LENGTH; i++) {
 		for (int i = 0; i < 2; i++) {
-			if ((CodeBuffer[i] != CodeHeaders[i])
-					|| (CodeBuffer[CODE_LENGTH - 1 - i] != CodeHeaders[3 - i])) {
+			if ((_centralLock->CodeBuffer[i] != CodeHeaders[i])
+					|| (_centralLock->CodeBuffer[CODE_LENGTH - 1 - i]
+							!= CodeHeaders[3 - i])) {
 				return UNVALID;
 			}
 		}
 	}
-	uint16_t decryptedSequenceNumber = CentralLock_DecryptCode();
-	uint16_t currentSequenceNumber = CentralLock_GetCurrentSequenceNum();
+	uint16_t decryptedSequenceNumber = CentralLock_DecryptCode(_centralLock);
+	uint16_t currentSequenceNumber = _centralLock->CurrentSequenceNumber;
 	if (ABS(decryptedSequenceNumber - currentSequenceNumber)
-			> MaxErrorInSequenceNumber) {
+			> _centralLock->MaxErrorInSequenceNumber) {
 		return OUT_OF_RANGE;
 	} else {
-		CentralLock_UpdateCurrentSequenceNum(decryptedSequenceNumber);
+		CentralLock_UpdateCurrentSequenceNum(_centralLock,
+				decryptedSequenceNumber);
 	}
 	return VALID;
 }
 
-static uint16_t CentralLock_GetCurrentSequenceNum() {
-	return CurrentSequenceNumber;
-}
-static void CentralLock_UpdateCurrentSequenceNum(uint16_t _newSequenceNumber) {
-	CurrentSequenceNumber = _newSequenceNumber;
+static void CentralLock_UpdateCurrentSequenceNum(CentralLock_t *_centralLock,
+		uint16_t _newSequenceNumber) {
+	_centralLock->CurrentSequenceNumber = _newSequenceNumber;
 }
 
-static uint16_t CentralLock_DecryptCode() {
+static uint16_t CentralLock_DecryptCode(CentralLock_t *_centralLock) {
 	uint16_t decryptedCode = 0;
-	decryptedCode = CodeBuffer[SECOND_BYTE_IN_SEQ_NUM];
+	decryptedCode = _centralLock->CodeBuffer[SECOND_BYTE_IN_SEQ_NUM];
 	decryptedCode = decryptedCode << FLASH_BYTE_SIZE;
-	decryptedCode = decryptedCode | CodeBuffer[FIRST_BYTE_IN_SEQ_NUM];
+	decryptedCode = decryptedCode
+			| _centralLock->CodeBuffer[FIRST_BYTE_IN_SEQ_NUM];
 	return decryptedCode;
 }
 
-void CentralLock_ChangeModuleLedState(ModuleLedState_t _moduleLedState) {
+void CentralLock_ChangeModuleLedState(CentralLock_t *_centralLock,
+		ModuleLedState_t _moduleLedState) {
 	if (_moduleLedState == MODULE_LED_BLINK) {
 		uint8_t i = 0;
 		for (i = 0U; i < 16; i++) {
@@ -177,4 +137,12 @@ void CentralLock_ChangeModuleLedState(ModuleLedState_t _moduleLedState) {
 		HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin,
 				_moduleLedState);
 	}
+}
+void CentralLock_SetPowerMode(CentralLock_t *_centralLock, PowerMode_t _mode) {
+	_centralLock->PowerMode = _mode;
+}
+
+void CentralLock_SetCodeReceivedFlag(CentralLock_t *_centralLock,
+bool _codeReceived) {
+	_centralLock->CodeReceived = _codeReceived;
 }

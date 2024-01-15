@@ -56,7 +56,7 @@ volatile uint32_t lastDebounceTime = 0;
 
 /* External variables --------------------------------------------------------*/
 extern UART_HandleTypeDef huart1;
-extern CentralLock_t CentralLock;
+extern CentralLock_t centralLock;
 extern volatile bool CodeReceived;
 /* USER CODE BEGIN EV */
 /* USER CODE END EV */
@@ -239,9 +239,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	/*
 	 * This Function is triggered only when all data are received.
 	 */
-	CodeReceived = true;
+
+	/*! <Enable the SysTick timer (source of time base) interrupts to resume the timing functionality> */
 	HAL_ResumeTick();
-	CentralLock_ReceiveCodeNonBlocking();
+	CentralLock_SetCodeReceivedFlag(&centralLock, true);
+	CentralLock_ReceiveCodeNonBlocking(&centralLock);
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
@@ -254,9 +256,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		lastDebounceTime = currentMillis;
 
 		if (GPIO_Pin == UNLOCK_ISR_Pin)
-			CentralLock_SetCurrentLockState(UNLOCKED);
+			CentralLock_SetCurrentLockState(&centralLock, UNLOCKED);
 		else if (GPIO_Pin == LOCK_ISR_Pin)
-			CentralLock_SetCurrentLockState(LOCKED);
+			CentralLock_SetCurrentLockState(&centralLock, LOCKED);
 		else {
 		}
 	}

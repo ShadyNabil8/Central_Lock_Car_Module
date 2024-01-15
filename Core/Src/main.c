@@ -47,9 +47,7 @@
 
 /* USER CODE BEGIN PV */
 extern UART_HandleTypeDef huart1;
-extern volatile PowerMode_t PowerMode;
-extern volatile bool CodeReceived;
-CentralLock_t CentralLock;
+CentralLock_t centralLock;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,8 +67,10 @@ void SystemClock_Config(void);
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-	LockState_t _currentLockState = CentralLock_GetCurrentLockState();
-	LockState_t _prevLockState = CentralLock_GetPrevLockState();
+	LockState_t currentLockState;
+	LockState_t prevLockState;
+	PowerMode_t powerMode;
+	bool codeReceivedFlag;
 
 	/* USER CODE END 1 */
 
@@ -94,7 +94,7 @@ int main(void) {
 	MX_GPIO_Init();
 	MX_USART1_UART_Init();
 	/* USER CODE BEGIN 2 */
-	CentralLock_Init(&CentralLock);
+	CentralLock_Init(&centralLock);
 
 	/* USER CODE END 2 */
 
@@ -103,51 +103,55 @@ int main(void) {
 	while (1) {
 		/* USER CODE END WHILE */
 		/* USER CODE BEGIN 3 */
-		_currentLockState = CentralLock_GetCurrentLockState();
-		_prevLockState = CentralLock_GetPrevLockState();
-		if (_currentLockState != _prevLockState) {
+		currentLockState = centralLock.CurrentLockState;
+		prevLockState = centralLock.PrevLockState;
+
+		if (currentLockState != prevLockState) {
 			/*! <The car owner has locked or unlocked the car without key-less entry> */
 
 			/*! <Prepare the central lock module for sleep mode> */
-			PowerMode = AWAKE;
+			CentralLock_SetPowerMode(&centralLock, AWAKE);
 
 			/*! <Just to indicate that some even has been happened> */
-			CentralLock_ChangeModuleLedState(MODULE_LED_ON);
+			CentralLock_ChangeModuleLedState(&centralLock, MODULE_LED_ON);
 
-			CentralLock_DoorChangeState(&CentralLock, _currentLockState);
+			CentralLock_DoorChangeState(&centralLock, currentLockState, KEY);
 		}
-		if (CodeReceived) {
+		codeReceivedFlag = centralLock.CodeReceived;
+		if (codeReceivedFlag) {
 			/*! <The car owner has locked or unlocked the car with key-less entry> */
 
-			CodeReceived = false;
+			CentralLock_SetCodeReceivedFlag(&centralLock, false);
 
 			/*! <Prepare the central lock module for sleep mode> */
-			PowerMode = AWAKE;
+			CentralLock_SetPowerMode(&centralLock, AWAKE);
 
 			/*! <Just to indicate that some even has been happened> */
-			CentralLock_ChangeModuleLedState(MODULE_LED_ON);
+			CentralLock_ChangeModuleLedState(&centralLock, MODULE_LED_ON);
 
 			/*! <check for the correctness of the code send> */
-			CodeStatus_t status = CentralLock_GetCodeStatus();
+			CodeStatus_t status = CentralLock_GetCodeStatus(&centralLock);
 
 			if (status == VALID) {
-				CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
+				CentralLock_DoorChangeState(&centralLock, UNLOCKED, KEYLESS);
 			} else if (status == OUT_OF_RANGE) {
 			} else if (status == UNVALID) {
 
 			} else {
 			}
-			CentralLock_ClearCodeBuffer();
+			CentralLock_ClearCodeBuffer(&centralLock);
 		}
-		if (PowerMode == AWAKE) {
+
+		powerMode = centralLock.PowerMode;
+		if (powerMode == AWAKE) {
 
 			/*! <Set the current power state of the central lock module> */
-			PowerMode = SLEEP;
+			CentralLock_SetPowerMode(&centralLock, SLEEP);
 
 			HAL_Delay(1000);
 
 			/*! <Just to indicate that some even has been happened> */
-			CentralLock_ChangeModuleLedState(MODULE_LED_BLINK);
+			CentralLock_ChangeModuleLedState(&centralLock, MODULE_LED_BLINK);
 
 			/*! <Disable the SysTick timer interrupts to not interrupt the processor
 			 *  each 1ms (by default) and get out of the sleep mode >
