@@ -36,8 +36,13 @@ typedef enum {
 	VALID, UNVALID, OUT_OF_RANGE
 } CodeStatus_t;
 
+typedef enum {
+	AWAKE, SLEEP
+} PowerMode_t;
+
 /* Section Functions prototypes -------------------------------------------------------------*/
-void CentralLock_DoorChangeState(CentralLock_t *CentralLock, LockState_t currentState);
+void CentralLock_DoorChangeState(CentralLock_t *CentralLock,
+		LockState_t currentState);
 static void CentralLock_UpdateCurrentSequenceNum(uint16_t _newSequenceNumber);
 void CentralLock_SetCurrentLockState(LockState_t CurrentState);
 void CentralLock_SetPrevLockState(LockState_t PrevState);
@@ -55,4 +60,5 @@ uint8_t CentralLock_GetCurSequenceNum();
 void CentralLock_IncCurSequenceNum();
 void CentralLock_RstCurSequenceNum();
 void CentralLock_ClearCodeBuffer();
+void CentralLock_BlinkLed();
 #endif /* INC_CENTRAL_LOCK_H_ */

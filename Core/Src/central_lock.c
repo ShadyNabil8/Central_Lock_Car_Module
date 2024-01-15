@@ -32,7 +32,7 @@ static const uint16_t MaxErrorInSequenceNumber = 99;
 static const uint8_t CodeHeaders[4] = { 0b01010101, 0b10101010, 0b00001111,
 		0b11110000 };
 
-volatile bool SleepModeEnable = false;
+volatile PowerMode_t PowerMode = SLEEP;
 
 /*! <UART module to receive the code>*/
 extern UART_HandleTypeDef huart1;
@@ -60,7 +60,7 @@ void CentralLock_Init(CentralLock_t *CentralLock) {
 	oldCode |= fetchOldCodeBuffer[0];
 	CurrentSequenceNumber = oldCode;
 
-	SleepModeEnable = false;
+	PowerMode = AWAKE;
 
 	/*!<Start receiving data>*/
 	CentralLock_ReceiveCodeNonBlocking();
@@ -85,8 +85,6 @@ void CentralLock_DoorChangeState(CentralLock_t *CentralLock,
 
 	NpOperations %= MaxNpOperations;
 
-	/*! <Go to sleep mode> */
-	//SleepModeEnable = true;
 }
 
 void CentralLock_ReceiveCodeNonBlocking() {
@@ -160,5 +158,14 @@ static uint16_t CentralLock_DecryptCode() {
 	decryptedCode = decryptedCode << FLASH_BYTE_SIZE;
 	decryptedCode = decryptedCode | CodeBuffer[FIRST_BYTE_IN_SEQ_NUM];
 	return decryptedCode;
+}
+
+void CentralLock_BlinkLed() {
+	uint8_t i = 0;
+	for (i = 0U; i < 16; i++) {
+		HAL_GPIO_TogglePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin);
+		HAL_Delay(100);
+	}
+	HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin, 1);
 }
 

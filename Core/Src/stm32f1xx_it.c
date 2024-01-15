@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "central_lock.h"
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,6 +57,8 @@ volatile uint32_t lastDebounceTime = 0;
 /* External variables --------------------------------------------------------*/
 extern UART_HandleTypeDef huart1;
 extern CentralLock_t CentralLock;
+extern volatile bool SleepModeEnable;
+extern volatile PowerMode_t PowerMode;
 /* USER CODE BEGIN EV */
 /* USER CODE END EV */
 
@@ -237,7 +240,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	/*
 	 * This Function is triggered only when all data are received.
 	 */
-	//HAL_ResumeTick();
+	HAL_ResumeTick();
+	HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin, 0);
+	PowerMode = AWAKE;
 	CodeStatus_t status = CentralLock_GetCodeStatus();
 	if (status == VALID) {
 		CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
@@ -254,13 +259,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	uint32_t currentMillis = Millis();
 	if (ABS(currentMillis - lastDebounceTime) >= debounceDelay) {
 		lastDebounceTime = currentMillis;
+		HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin, 0);
+		PowerMode = AWAKE;
+		HAL_ResumeTick();
 		if (GPIO_Pin == UNLOCK_ISR_Pin) {
 			CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
 		} else if (GPIO_Pin == LOCK_ISR_Pin) {
-
 			CentralLock_DoorChangeState(&CentralLock, LOCKED);
-			lastDebounceTime = currentMillis;
-
 		} else {
 		}
 	}
