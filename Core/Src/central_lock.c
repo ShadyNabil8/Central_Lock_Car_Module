@@ -1,5 +1,4 @@
 #include "central_lock.h"
-#include  <stdbool.h>
 
 /* Section Variables -------------------------------------------------------------*/
 
@@ -8,6 +7,9 @@ static volatile LockState_t CurrentLockState;
 
 /*! <Variable to carry the previous lock state of the car (locked or unlocked)>*/
 static volatile LockState_t PrevLockState;
+
+/*! <Variable to indicate if the code is sent or not>*/
+volatile bool CodeReceived = false;
 
 /*! <Variable to carry the number of lock/unlock operations since the module is on>*/
 static volatile uint8_t NpOperations = 0;
@@ -60,6 +62,9 @@ void CentralLock_Init(CentralLock_t *CentralLock) {
 	oldCode |= fetchOldCodeBuffer[0];
 	CurrentSequenceNumber = oldCode;
 
+	CodeReceived = false;
+
+	/*! <The current power state of the central lock module> */
 	PowerMode = AWAKE;
 
 	/*!<Start receiving data>*/
@@ -68,14 +73,13 @@ void CentralLock_Init(CentralLock_t *CentralLock) {
 
 void CentralLock_DoorChangeState(CentralLock_t *CentralLock,
 		LockState_t _currentState) {
-	LockState_t _prevLockState = CentralLock_GetPrevLockState();
-	if (_prevLockState != _currentState) {
-		for (int i = 0; i < 4; i++)
-			HAL_GPIO_WritePin(CentralLock->GPIOx_Doors_Port,
-					CentralLock->GPIO_DoorArr[i], _currentState);
-		CentralLock_SetCurrentLockState(_currentState);
-		CentralLock_SetPrevLockState(_currentState);
-	}
+
+	for (int i = 0; i < 4; i++)
+		HAL_GPIO_WritePin(CentralLock->GPIOx_Doors_Port,
+				CentralLock->GPIO_DoorArr[i], _currentState);
+
+	CentralLock_SetCurrentLockState(_currentState);
+	CentralLock_SetPrevLockState(_currentState);
 
 	NpOperations++;
 
@@ -160,12 +164,17 @@ static uint16_t CentralLock_DecryptCode() {
 	return decryptedCode;
 }
 
-void CentralLock_BlinkLed() {
-	uint8_t i = 0;
-	for (i = 0U; i < 16; i++) {
-		HAL_GPIO_TogglePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin);
-		HAL_Delay(100);
+void CentralLock_ChangeModuleLedState(ModuleLedState_t _moduleLedState) {
+	if (_moduleLedState == MODULE_LED_BLINK) {
+		uint8_t i = 0;
+		for (i = 0U; i < 16; i++) {
+			HAL_GPIO_TogglePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin);
+			HAL_Delay(BLINK_DELAY);
+		}
+		HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin,
+		MODULE_BUILT_IN_LOW);
+	} else {
+		HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin,
+				_moduleLedState);
 	}
-	HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin, 1);
 }
-

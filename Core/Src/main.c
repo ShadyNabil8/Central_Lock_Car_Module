@@ -47,9 +47,8 @@
 
 /* USER CODE BEGIN PV */
 extern UART_HandleTypeDef huart1;
-extern volatile uint8_t receivedByte;
 extern volatile PowerMode_t PowerMode;
-volatile uint16_t currentSeqNumber = 0;
+extern volatile bool CodeReceived;
 CentralLock_t CentralLock;
 /* USER CODE END PV */
 
@@ -70,6 +69,8 @@ void SystemClock_Config(void);
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
+	LockState_t _currentLockState = CentralLock_GetCurrentLockState();
+	LockState_t _prevLockState = CentralLock_GetPrevLockState();
 
 	/* USER CODE END 1 */
 
@@ -102,14 +103,60 @@ int main(void) {
 	while (1) {
 		/* USER CODE END WHILE */
 		/* USER CODE BEGIN 3 */
+		_currentLockState = CentralLock_GetCurrentLockState();
+		_prevLockState = CentralLock_GetPrevLockState();
+		if (_currentLockState != _prevLockState) {
+			/*! <The car owner has locked or unlocked the car without key-less entry> */
+
+			/*! <Prepare the central lock module for sleep mode> */
+			PowerMode = AWAKE;
+
+			/*! <Just to indicate that some even has been happened> */
+			CentralLock_ChangeModuleLedState(MODULE_LED_ON);
+
+			CentralLock_DoorChangeState(&CentralLock, _currentLockState);
+		}
+		if (CodeReceived) {
+			/*! <The car owner has locked or unlocked the car with key-less entry> */
+
+			CodeReceived = false;
+
+			/*! <Prepare the central lock module for sleep mode> */
+			PowerMode = AWAKE;
+
+			/*! <Just to indicate that some even has been happened> */
+			CentralLock_ChangeModuleLedState(MODULE_LED_ON);
+
+			/*! <check for the correctness of the code send> */
+			CodeStatus_t status = CentralLock_GetCodeStatus();
+
+			if (status == VALID) {
+				CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
+			} else if (status == OUT_OF_RANGE) {
+			} else if (status == UNVALID) {
+
+			} else {
+			}
+			CentralLock_ClearCodeBuffer();
+		}
 		if (PowerMode == AWAKE) {
-			HAL_Delay(1000);
-			CentralLock_BlinkLed(PowerMode);
+
+			/*! <Set the current power state of the central lock module> */
 			PowerMode = SLEEP;
+
+			HAL_Delay(1000);
+
+			/*! <Just to indicate that some even has been happened> */
+			CentralLock_ChangeModuleLedState(MODULE_LED_BLINK);
+
+			/*! <Disable the SysTick timer interrupts to not interrupt the processor
+			 *  each 1ms (by default) and get out of the sleep mode >
+			 */
 			HAL_SuspendTick();
+
+			/*! <Enter Sleep mode> */
 			HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 		}
-
 	}
 	/* USER CODE END 3 */
 }

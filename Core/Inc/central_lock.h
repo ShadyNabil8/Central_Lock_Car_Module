@@ -12,13 +12,25 @@
 #include "gpio.h"
 #include "time.h"
 #include "HAL_flash.h"
+#include  <stdbool.h>
 
 /* Section macros -------------------------------------------------------------*/
 #define CODE_LENGTH 6
+
 #define SEQUENCE_NUMBER_LENGTH 2
+
 #define FIRST_BYTE_IN_SEQ_NUM 2
+
 #define SECOND_BYTE_IN_SEQ_NUM 3
+
+#define BLINK_DELAY 100
+
+#define MODULE_BUILT_IN_HIGH  0
+
+#define MODULE_BUILT_IN_LOW  1
+
 #define FLASH_START_ADDRESS 0x0801FC00
+
 #define ABS(x) ((x)>0?(x):-(x))
 
 /* Section typedefines -------------------------------------------------------------*/
@@ -40,6 +52,10 @@ typedef enum {
 	AWAKE, SLEEP
 } PowerMode_t;
 
+typedef enum {
+	MODULE_LED_ON, MODULE_LED_OFF, MODULE_LED_BLINK
+} ModuleLedState_t;
+
 /* Section Functions prototypes -------------------------------------------------------------*/
 void CentralLock_DoorChangeState(CentralLock_t *CentralLock,
 		LockState_t currentState);
@@ -60,5 +76,5 @@ uint8_t CentralLock_GetCurSequenceNum();
 void CentralLock_IncCurSequenceNum();
 void CentralLock_RstCurSequenceNum();
 void CentralLock_ClearCodeBuffer();
-void CentralLock_BlinkLed();
+void CentralLock_ChangeModuleLedState(ModuleLedState_t _moduleLedState);
 #endif /* INC_CENTRAL_LOCK_H_ */
