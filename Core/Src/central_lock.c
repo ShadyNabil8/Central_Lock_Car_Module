@@ -13,7 +13,7 @@ static volatile LockState_t PrevLockState;
 static volatile uint8_t NpOperations = 0;
 
 /*! <Variable to carry the maximum number of lock/unlock operation before storing the sequence number in the flash memory>*/
-static volatile const uint8_t MaxNpOperations = 5;
+static volatile const uint8_t MaxNpOperations = 20;
 
 /*! <Buffer to store the code for further processing>*/
 static uint8_t CodeBuffer[CODE_LENGTH];
@@ -32,6 +32,8 @@ static const uint16_t MaxErrorInSequenceNumber = 99;
 static const uint8_t CodeHeaders[4] = { 0b01010101, 0b10101010, 0b00001111,
 		0b11110000 };
 
+volatile bool SleepModeEnable = false;
+
 /*! <UART module to receive the code>*/
 extern UART_HandleTypeDef huart1;
 
@@ -44,6 +46,8 @@ void CentralLock_Init(CentralLock_t *CentralLock) {
 	CentralLock->GPIO_DoorArr[2] = GPIO_PIN_14;
 	CentralLock->GPIO_DoorArr[3] = GPIO_PIN_15;
 
+	/*! <We should here check the door if it is locked or not> */
+	/*! <But for now it will be like this untill I get more HW> */
 	CurrentLockState = LOCKED;
 	PrevLockState = LOCKED;
 
@@ -55,6 +59,8 @@ void CentralLock_Init(CentralLock_t *CentralLock) {
 	oldCode = oldCode << FLASH_BYTE_SIZE;
 	oldCode |= fetchOldCodeBuffer[0];
 	CurrentSequenceNumber = oldCode;
+
+	SleepModeEnable = false;
 
 	/*!<Start receiving data>*/
 	CentralLock_ReceiveCodeNonBlocking();
@@ -78,6 +84,9 @@ void CentralLock_DoorChangeState(CentralLock_t *CentralLock,
 		SEQUENCE_NUMBER_LENGTH, FLASH_START_ADDRESS);
 
 	NpOperations %= MaxNpOperations;
+
+	/*! <Go to sleep mode> */
+	//SleepModeEnable = true;
 }
 
 void CentralLock_ReceiveCodeNonBlocking() {

@@ -20,6 +20,7 @@
 #include "main.h"
 #include "usart.h"
 #include "gpio.h"
+#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -46,9 +47,10 @@
 
 /* USER CODE BEGIN PV */
 extern UART_HandleTypeDef huart1;
-CentralLock_t CentralLock;
 extern volatile uint8_t receivedByte;
+extern volatile bool SleepModeEnable;
 volatile uint16_t currentSeqNumber = 0;
+CentralLock_t CentralLock;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -101,6 +103,11 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
+//		if (SleepModeEnable) {
+//			SleepModeEnable = false;
+//			HAL_SuspendTick();
+//			HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+//		}
 
 	}
 	/* USER CODE END 3 */

@@ -192,11 +192,7 @@ void EXTI0_IRQHandler(void) {
 	/* USER CODE END EXTI0_IRQn 0 */
 	HAL_GPIO_EXTI_IRQHandler(UNLOCK_ISR_Pin);
 	/* USER CODE BEGIN EXTI0_IRQn 1 */
-	uint32_t currentMillis = Millis();
-	if (ABS(currentMillis - lastDebounceTime) >= debounceDelay) {
-		CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
-		lastDebounceTime = currentMillis;
-	}
+
 	/* USER CODE END EXTI0_IRQn 1 */
 }
 
@@ -209,11 +205,7 @@ void EXTI1_IRQHandler(void) {
 	/* USER CODE END EXTI1_IRQn 0 */
 	HAL_GPIO_EXTI_IRQHandler(LOCK_ISR_Pin);
 	/* USER CODE BEGIN EXTI1_IRQn 1 */
-	uint32_t currentMillis = Millis();
-	if (ABS(currentMillis - lastDebounceTime) >= debounceDelay) {
-		CentralLock_DoorChangeState(&CentralLock, LOCKED);
-		lastDebounceTime = currentMillis;
-	}
+
 	/* USER CODE END EXTI1_IRQn 1 */
 }
 
@@ -226,9 +218,11 @@ void USART1_IRQHandler(void) {
 	/* USER CODE END USART1_IRQn 0 */
 	HAL_UART_IRQHandler(&huart1);
 	/* USER CODE BEGIN USART1_IRQn 1 */
+
 	/*
 	 * This Function is triggered each time a byte is received.
 	 */
+
 	/* USER CODE END USART1_IRQn 1 */
 }
 
@@ -243,6 +237,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	/*
 	 * This Function is triggered only when all data are received.
 	 */
+	//HAL_ResumeTick();
 	CodeStatus_t status = CentralLock_GetCodeStatus();
 	if (status == VALID) {
 		CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
@@ -254,4 +249,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	CentralLock_ClearCodeBuffer();
 	CentralLock_ReceiveCodeNonBlocking();
 }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	uint32_t currentMillis = Millis();
+	if (ABS(currentMillis - lastDebounceTime) >= debounceDelay) {
+		lastDebounceTime = currentMillis;
+		if (GPIO_Pin == UNLOCK_ISR_Pin) {
+			CentralLock_DoorChangeState(&CentralLock, UNLOCKED);
+		} else if (GPIO_Pin == LOCK_ISR_Pin) {
+
+			CentralLock_DoorChangeState(&CentralLock, LOCKED);
+			lastDebounceTime = currentMillis;
+
+		} else {
+		}
+	}
+}
+
 /* USER CODE END 1 */

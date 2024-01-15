@@ -30,6 +30,10 @@ In a stage in the code, I nedded to use the flash memory in STM32F103C8T (STM32F
 
 I needed a stage in the code to know the time according to the processor, so after sailing through the STM32F103C8T6 drivers provided by STM and some searching, I found that I could use the SysTick timer to know the time according to the processor.
 
+## 4. Callback function
+
+A callback function is a function that is passed as an argument to another function, and it is called at a later time to complete some kind of action.
+
 # The challenges I faced
 
 ## Syncrhonozation between TX and RX

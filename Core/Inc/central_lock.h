@@ -38,7 +38,7 @@ typedef enum {
 
 /* Section Functions prototypes -------------------------------------------------------------*/
 void CentralLock_DoorChangeState(CentralLock_t *CentralLock, LockState_t currentState);
-static void CentralLock_UpdateCurrentSequenceNum(uint16_t newSequenceNumber);
+static void CentralLock_UpdateCurrentSequenceNum(uint16_t _newSequenceNumber);
 void CentralLock_SetCurrentLockState(LockState_t CurrentState);
 void CentralLock_SetPrevLockState(LockState_t PrevState);
 void CentralLock_OpenDoors(CentralLock_t *CentralLock);
