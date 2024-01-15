@@ -34,6 +34,10 @@ I needed a stage in the code to know the time according to the processor, so aft
 
 A callback function is a function that is passed as an argument to another function, and it is called at a later time to complete some kind of action.
 
+## 5. Sleep mode
+
+There is no need to consume power while the central lock module is idle. So I used the sleep mode to save the power.
+
 # The challenges I faced
 
 ## Syncrhonozation between TX and RX
