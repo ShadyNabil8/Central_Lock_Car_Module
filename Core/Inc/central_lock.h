@@ -98,9 +98,6 @@ void CentralLock_ClearCodeBuffer(CentralLock_t *_centralLock);
 
 CodeStatus_t CentralLock_GetCodeStatus(CentralLock_t *_centralLock);
 
-void CentralLock_UpdateCurrentSequenceNum(CentralLock_t *_centralLock,
-		uint16_t _newSequenceNumber);
-
 uint16_t CentralLock_DecryptCode(CentralLock_t *_centralLock);
 
 void CentralLock_ChangeModuleLedState(CentralLock_t *_centralLock,
