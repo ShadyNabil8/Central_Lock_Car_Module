@@ -31,10 +31,10 @@
 
 #define FLASH_START_ADDRESS 0x0801FC00
 
+/* Section macro functions -------------------------------------------------------------*/
 #define ABS(x) ((x)>0?(x):-(x))
 
 /* Section typedefines -------------------------------------------------------------*/
-
 typedef enum {
 	LOCKED, UNLOCKED
 } LockState_t;
@@ -48,30 +48,28 @@ typedef enum {
 } PowerMode_t;
 
 typedef struct {
-	GPIO_TypeDef *GPIOx_Doors_Port;
-	uint16_t GPIO_DoorArr[4];
-	uint16_t GPIO_Led_Pin;
 	/*! <Variable to carry the current lock state of the car (locked or unlocked)>*/
-	LockState_t CurrentLockState;
+	LockState_t currentLockState;
 	/*! <Variable to carry the previous lock state of the car (locked or unlocked)>*/
-	LockState_t PrevLockState;
+	LockState_t prevLockState;
 	/*! <Variable to indicate if the code is sent or not>*/
-	bool CodeReceived;
-	PowerMode_t PowerMode;
+	bool codeReceivedFlag;
+	/*! <Variable to carry the current power mode of the module (sleep / awake) >*/
+	PowerMode_t powerMode;
 	/*! <Variable to carry the number of lock/unlock operations since the module is on>*/
-	uint8_t NpOperations;
+	uint8_t numOperations;
 	/*! <Variable to carry the maximum number of lock/unlock operation before storing the sequence number in the flash memory>*/
-	uint8_t MaxNpOperations;
+	uint8_t maxNpOperations;
 	/*! <Buffer to store the code for further processing>*/
 	uint8_t CodeBuffer[CODE_LENGTH];
 	/*! <Variable to carry the current sequence number that is synchronized with the car key>*/
-	uint16_t CurrentSequenceNumber;
+	uint16_t currentSequenceNumber;
 	/*! <If the difference between the sequence number fetcher from the car key and the current sequence number is
 	 * greater than 99, then the code is not valid and the module will not unlock the car for security purpose,
 	 * or the car key and the module need to be reprogrammed. by the car owner in case of key is pressed frequently far from the car.
 	 * This logic is used to secure the car against the hacking if someone tried to send a random code.
 	 * >*/
-	uint16_t MaxErrorInSequenceNumber;
+	uint16_t maxErrorInSequenceNumber;
 } CentralLock_t;
 
 typedef enum {
@@ -100,10 +98,10 @@ void CentralLock_ClearCodeBuffer(CentralLock_t *_centralLock);
 
 CodeStatus_t CentralLock_GetCodeStatus(CentralLock_t *_centralLock);
 
-static void CentralLock_UpdateCurrentSequenceNum(CentralLock_t *_centralLock,
+void CentralLock_UpdateCurrentSequenceNum(CentralLock_t *_centralLock,
 		uint16_t _newSequenceNumber);
 
-static uint16_t CentralLock_DecryptCode(CentralLock_t *_centralLock);
+uint16_t CentralLock_DecryptCode(CentralLock_t *_centralLock);
 
 void CentralLock_ChangeModuleLedState(CentralLock_t *_centralLock,
 		ModuleLedState_t _moduleLedState);
@@ -111,6 +109,6 @@ void CentralLock_ChangeModuleLedState(CentralLock_t *_centralLock,
 void CentralLock_SetPowerMode(CentralLock_t *_centralLock, PowerMode_t _mode);
 
 void CentralLock_SetCodeReceivedFlag(CentralLock_t *_centralLock,
-bool _codeReceived);
+bool _codeReceivedFlag);
 
 #endif /* INC_CENTRAL_LOCK_H_ */

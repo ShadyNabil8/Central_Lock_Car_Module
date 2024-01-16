@@ -11,25 +11,21 @@ extern UART_HandleTypeDef huart1;
 
 /* Section Functions implementation -------------------------------------------------------------*/
 void CentralLock_Init(CentralLock_t *_centralLock) {
-	/*!<Central lock module pin configuration>*/
-	_centralLock->GPIOx_Doors_Port = GPIOB;
-	_centralLock->GPIO_DoorArr[0] = GPIO_PIN_12;
-	_centralLock->GPIO_DoorArr[1] = GPIO_PIN_13;
-	_centralLock->GPIO_DoorArr[2] = GPIO_PIN_14;
-	_centralLock->GPIO_DoorArr[3] = GPIO_PIN_15;
 
 	/*! <We should here check the door if it is locked or not> */
 	/*! <But for now it will be like this untill I get more HW> */
-	_centralLock->CurrentLockState = LOCKED;
-	_centralLock->PrevLockState = LOCKED;
+	_centralLock->currentLockState = LOCKED;
+	_centralLock->prevLockState = LOCKED;
+
 	/*! <The current power state of the central lock module> */
-	_centralLock->PowerMode = AWAKE;
-	_centralLock->CodeReceived = false;
+	_centralLock->powerMode = AWAKE;
 
-	_centralLock->MaxErrorInSequenceNumber = 100;
+	_centralLock->codeReceivedFlag = false;
 
-	_centralLock->NpOperations = 0;
-	_centralLock->MaxNpOperations = 5;
+	_centralLock->maxErrorInSequenceNumber = 100;
+
+	_centralLock->numOperations = 0;
+	_centralLock->maxNpOperations = 5;
 
 	/*!<First, fetch the old sequence number from the flash memory>*/
 	uint8_t fetchOldCodeBuffer[SEQUENCE_NUMBER_LENGTH] = { 0 };
@@ -38,7 +34,7 @@ void CentralLock_Init(CentralLock_t *_centralLock) {
 	uint16_t oldCode = fetchOldCodeBuffer[1];
 	oldCode = oldCode << FLASH_BYTE_SIZE;
 	oldCode |= fetchOldCodeBuffer[0];
-	_centralLock->CurrentSequenceNumber = oldCode;
+	_centralLock->currentSequenceNumber = oldCode;
 
 	/*!<Start receiving data>*/
 	CentralLock_ReceiveCodeNonBlocking(_centralLock);
@@ -47,22 +43,24 @@ void CentralLock_Init(CentralLock_t *_centralLock) {
 void CentralLock_DoorChangeState(CentralLock_t *_centralLock,
 		LockState_t _currentState, StateChangeSource_t _stateChangeSource) {
 
-	for (int i = 0; i < 4; i++)
-		HAL_GPIO_WritePin(_centralLock->GPIOx_Doors_Port,
-				_centralLock->GPIO_DoorArr[i], _currentState);
+	/*! <Simulate locking and unlocking the doors> */
+	HAL_GPIO_WritePin(DOOR0_GPIO_Port, DOOR0_Pin, _currentState);
+	HAL_GPIO_WritePin(DOOR1_GPIO_Port, DOOR1_Pin, _currentState);
+	HAL_GPIO_WritePin(DOOR2_GPIO_Port, DOOR2_Pin, _currentState);
+	HAL_GPIO_WritePin(DOOR3_GPIO_Port, DOOR3_Pin, _currentState);
 
 	CentralLock_SetCurrentLockState(_centralLock, _currentState);
 	CentralLock_SetPrevLockState(_centralLock, _currentState);
 
 	if (_stateChangeSource == KEYLESS) {
-		_centralLock->NpOperations++;
+		_centralLock->numOperations++;
 
-		if (_centralLock->NpOperations >= _centralLock->MaxNpOperations)
+		if (_centralLock->numOperations >= _centralLock->maxNpOperations)
 			HAL_FlashStoreData(
 					_centralLock->CodeBuffer + SEQUENCE_NUMBER_LENGTH,
 					SEQUENCE_NUMBER_LENGTH, FLASH_START_ADDRESS);
 
-		_centralLock->NpOperations %= _centralLock->MaxNpOperations;
+		_centralLock->numOperations %= _centralLock->maxNpOperations;
 	}
 
 }
@@ -73,11 +71,11 @@ void CentralLock_ReceiveCodeNonBlocking(CentralLock_t *_centralLock) {
 
 void CentralLock_SetCurrentLockState(CentralLock_t *_centralLock,
 		LockState_t _currentLockState) {
-	_centralLock->CurrentLockState = _currentLockState;
+	_centralLock->currentLockState = _currentLockState;
 }
 void CentralLock_SetPrevLockState(CentralLock_t *_centralLock,
 		LockState_t _prevLockState) {
-	_centralLock->PrevLockState = _prevLockState;
+	_centralLock->prevLockState = _prevLockState;
 
 }
 
@@ -98,9 +96,9 @@ CodeStatus_t CentralLock_GetCodeStatus(CentralLock_t *_centralLock) {
 		}
 	}
 	uint16_t decryptedSequenceNumber = CentralLock_DecryptCode(_centralLock);
-	uint16_t currentSequenceNumber = _centralLock->CurrentSequenceNumber;
+	uint16_t currentSequenceNumber = _centralLock->currentSequenceNumber;
 	if (ABS(decryptedSequenceNumber - currentSequenceNumber)
-			> _centralLock->MaxErrorInSequenceNumber) {
+			> _centralLock->maxErrorInSequenceNumber) {
 		return OUT_OF_RANGE;
 	} else {
 		CentralLock_UpdateCurrentSequenceNum(_centralLock,
@@ -109,12 +107,12 @@ CodeStatus_t CentralLock_GetCodeStatus(CentralLock_t *_centralLock) {
 	return VALID;
 }
 
-static void CentralLock_UpdateCurrentSequenceNum(CentralLock_t *_centralLock,
+void CentralLock_UpdateCurrentSequenceNum(CentralLock_t *_centralLock,
 		uint16_t _newSequenceNumber) {
-	_centralLock->CurrentSequenceNumber = _newSequenceNumber;
+	_centralLock->currentSequenceNumber = _newSequenceNumber;
 }
 
-static uint16_t CentralLock_DecryptCode(CentralLock_t *_centralLock) {
+uint16_t CentralLock_DecryptCode(CentralLock_t *_centralLock) {
 	uint16_t decryptedCode = 0;
 	decryptedCode = _centralLock->CodeBuffer[SECOND_BYTE_IN_SEQ_NUM];
 	decryptedCode = decryptedCode << FLASH_BYTE_SIZE;
@@ -128,21 +126,22 @@ void CentralLock_ChangeModuleLedState(CentralLock_t *_centralLock,
 	if (_moduleLedState == MODULE_LED_BLINK) {
 		uint8_t i = 0;
 		for (i = 0U; i < 16; i++) {
-			HAL_GPIO_TogglePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin);
+			HAL_GPIO_TogglePin(CENTRAL_LOCK_LED_GPIO_Port,
+					CENTRAL_LOCK_LED_Pin);
 			HAL_Delay(BLINK_DELAY);
 		}
-		HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin,
+		HAL_GPIO_WritePin(CENTRAL_LOCK_LED_GPIO_Port, CENTRAL_LOCK_LED_Pin,
 		MODULE_BUILT_IN_LOW);
 	} else {
-		HAL_GPIO_WritePin(BUILT_IN_LED_GPIO_Port, BUILT_IN_LED_Pin,
+		HAL_GPIO_WritePin(CENTRAL_LOCK_LED_GPIO_Port, CENTRAL_LOCK_LED_Pin,
 				_moduleLedState);
 	}
 }
 void CentralLock_SetPowerMode(CentralLock_t *_centralLock, PowerMode_t _mode) {
-	_centralLock->PowerMode = _mode;
+	_centralLock->powerMode = _mode;
 }
 
 void CentralLock_SetCodeReceivedFlag(CentralLock_t *_centralLock,
-bool _codeReceived) {
-	_centralLock->CodeReceived = _codeReceived;
+bool _codeReceivedFlag) {
+	_centralLock->codeReceivedFlag = _codeReceivedFlag;
 }

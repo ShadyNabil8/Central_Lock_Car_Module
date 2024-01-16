@@ -57,14 +57,22 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define BUILT_IN_LED_Pin GPIO_PIN_13
-#define BUILT_IN_LED_GPIO_Port GPIOC
+#define CENTRAL_LOCK_LED_Pin GPIO_PIN_13
+#define CENTRAL_LOCK_LED_GPIO_Port GPIOC
 #define UNLOCK_ISR_Pin GPIO_PIN_0
 #define UNLOCK_ISR_GPIO_Port GPIOA
 #define UNLOCK_ISR_EXTI_IRQn EXTI0_IRQn
 #define LOCK_ISR_Pin GPIO_PIN_1
 #define LOCK_ISR_GPIO_Port GPIOA
 #define LOCK_ISR_EXTI_IRQn EXTI1_IRQn
+#define DOOR0_Pin GPIO_PIN_12
+#define DOOR0_GPIO_Port GPIOB
+#define DOOR1_Pin GPIO_PIN_13
+#define DOOR1_GPIO_Port GPIOB
+#define DOOR2_Pin GPIO_PIN_14
+#define DOOR2_GPIO_Port GPIOB
+#define DOOR3_Pin GPIO_PIN_15
+#define DOOR3_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
