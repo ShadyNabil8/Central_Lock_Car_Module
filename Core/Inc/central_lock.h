@@ -29,6 +29,16 @@
 
 #define MODULE_BUILT_IN_LOW  1
 
+/*! <Carry the maximum number of lock/unlock operation before storing the sequence number in the flash memory>*/
+#define MAX_NUMBER_OPERATIONS 20
+
+/*! <If the difference between the sequence number fetcher from the car key and the current sequence number is
+ * greater than 99, then the code is not valid and the module will not unlock the car for security purpose,
+ * or the car key and the module need to be reprogrammed. by the car owner in case of key is pressed frequently far from the car.
+ * This logic is used to secure the car against the hacking if someone tried to send a random code.
+ * >*/
+#define MAX_ERROR_SEQUENCE_NUMBER 99
+
 #define FLASH_START_ADDRESS 0x0801FC00
 
 /* Section macro functions -------------------------------------------------------------*/
@@ -58,18 +68,10 @@ typedef struct {
 	PowerMode_t powerMode;
 	/*! <Variable to carry the number of lock/unlock operations since the module is on>*/
 	uint8_t numOperations;
-	/*! <Variable to carry the maximum number of lock/unlock operation before storing the sequence number in the flash memory>*/
-	uint8_t maxNpOperations;
 	/*! <Buffer to store the code for further processing>*/
 	uint8_t CodeBuffer[CODE_LENGTH];
 	/*! <Variable to carry the current sequence number that is synchronized with the car key>*/
 	uint16_t currentSequenceNumber;
-	/*! <If the difference between the sequence number fetcher from the car key and the current sequence number is
-	 * greater than 99, then the code is not valid and the module will not unlock the car for security purpose,
-	 * or the car key and the module need to be reprogrammed. by the car owner in case of key is pressed frequently far from the car.
-	 * This logic is used to secure the car against the hacking if someone tried to send a random code.
-	 * >*/
-	uint16_t maxErrorInSequenceNumber;
 } CentralLock_t;
 
 typedef enum {

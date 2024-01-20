@@ -121,7 +121,7 @@ HAL_StatusTypeDef HAL_FlashErase(uint32_t _typeErase,
 
 	/* EraseInit configuration*/
 	FLASH_EraseInitTypeDef pageEraseInit;
-	pageEraseInit.TypeErase = FLASH_TYPEERASE_PAGES;
+	pageEraseInit.TypeErase = _typeErase;
 	pageEraseInit.PageAddress = _eraseStartAddress;
 	pageEraseInit.NbPages = _numOfPages;
 

@@ -33,11 +33,7 @@ void CentralLock_Init(CentralLock_t *_centralLock) {
 
 	_centralLock->codeReceivedFlag = false;
 
-	_centralLock->maxErrorInSequenceNumber = 100;
-
 	_centralLock->numOperations = 0;
-
-	_centralLock->maxNpOperations = 5;
 
 	/*!<First, fetch the old sequence number from the flash memory>*/
 	uint8_t fetchOldCodeBuffer[SEQUENCE_NUMBER_LENGTH] = { 0 };
@@ -80,12 +76,12 @@ void CentralLock_DoorChangeState(CentralLock_t *_centralLock,
 		/* Increment the number of operations and store the code if necessary */
 		_centralLock->numOperations++;
 
-		if (_centralLock->numOperations >= _centralLock->maxNpOperations)
+		if (_centralLock->numOperations >= MAX_NUMBER_OPERATIONS)
 			HAL_FlashStoreData(
 					_centralLock->CodeBuffer + SEQUENCE_NUMBER_LENGTH,
 					SEQUENCE_NUMBER_LENGTH, FLASH_START_ADDRESS);
 
-		_centralLock->numOperations %= _centralLock->maxNpOperations;
+		_centralLock->numOperations %= MAX_NUMBER_OPERATIONS;
 	}
 }
 
@@ -160,7 +156,7 @@ CodeStatus_t CentralLock_GetCodeStatus(CentralLock_t *_centralLock) {
 	uint16_t decryptedSequenceNumber = CentralLock_DecryptCode(_centralLock);
 	uint16_t currentSequenceNumber = _centralLock->currentSequenceNumber;
 	if (ABS(decryptedSequenceNumber - currentSequenceNumber)
-			> _centralLock->maxErrorInSequenceNumber) {
+			> MAX_ERROR_SEQUENCE_NUMBER) {
 		return OUT_OF_RANGE;
 	} else {
 		_centralLock->currentSequenceNumber = decryptedSequenceNumber;
