@@ -44,7 +44,29 @@
 /* Section macro functions -------------------------------------------------------------*/
 #define ABS(x) ((x)>0?(x):-(x))
 
+#define IS_LOCKSTATE(STATE) ((STATE == LOCKED) || (STATE == UNLOCKED))
+
+#define IS_NULL(PTR) (NULL == PTR)
+
+#define IS_ERROR(VAL) (VAL == CENTRALLOCK_ERROR)
+
+#define IS_LED_STATE(STATE) ((STATE == MODULE_LED_ON) || (STATE == MODULE_LED_OFF) || (STATE == MODULE_LED_BLINK))
+
+#define IS_CHANGE_STATE_SRC(SRC) ((SRC == KEY) || (SRC == KEYLESS))
+
+#define IS_POWER_MODE(MODE) ((MODE == AWAKE) || (MODE == SLEEP))
+
 /* Section typedefines -------------------------------------------------------------*/
+/**
+ * @brief  HAL Status structures definition
+ */
+typedef enum {
+	CENTRALLOCK_OK = 0x00U,
+	CENTRALLOCK_ERROR = 0x01U,
+	CENTRALLOCK_UNVALID_CODE = 0x02U,
+	CENTRALLOCK_OUTOFRANGE_CODE = 0x04U,
+} CENTRALLOCK_StatusTypeDef;
+
 typedef enum {
 	LOCKED, UNLOCKED
 } LockState_t;
@@ -56,6 +78,14 @@ typedef enum {
 typedef enum {
 	AWAKE, SLEEP
 } PowerMode_t;
+
+typedef enum {
+	MODULE_LED_ON, MODULE_LED_OFF, MODULE_LED_BLINK
+} ModuleLedState_t;
+
+typedef enum {
+	KEY, KEYLESS
+} StateChangeSource_t;
 
 typedef struct {
 	/*! <Variable to carry the current lock state of the car (locked or unlocked)>*/
@@ -74,40 +104,38 @@ typedef struct {
 	uint16_t currentSequenceNumber;
 } CentralLock_t;
 
-typedef enum {
-	MODULE_LED_ON, MODULE_LED_OFF, MODULE_LED_BLINK
-} ModuleLedState_t;
-
-typedef enum {
-	KEY, KEYLESS
-} StateChangeSource_t;
-
 /* Section Functions prototypes -------------------------------------------------------------*/
-void CentralLock_Init(CentralLock_t *_centralLock);
+CENTRALLOCK_StatusTypeDef CentralLock_Init(CentralLock_t *_centralLock);
 
-void CentralLock_DoorChangeState(CentralLock_t *_centralLock,
-		LockState_t _currentState, StateChangeSource_t _stateChangeSource);
+CENTRALLOCK_StatusTypeDef CentralLock_DoorChangeState(
+		CentralLock_t *_centralLock, LockState_t _currentState,
+		StateChangeSource_t _stateChangeSource);
 
-void CentralLock_ReceiveCodeNonBlocking(CentralLock_t *_centralLock);
+CENTRALLOCK_StatusTypeDef CentralLock_ReceiveCodeNonBlocking(
+		CentralLock_t *_centralLock);
 
-void CentralLock_SetCurrentLockState(CentralLock_t *_centralLock,
-		LockState_t _currentLockState);
+CENTRALLOCK_StatusTypeDef CentralLock_SetCurrentLockState(
+		CentralLock_t *_centralLock, LockState_t _currentLockState);
 
-void CentralLock_SetPrevLockState(CentralLock_t *_centralLock,
-		LockState_t _prevLockState);
+CENTRALLOCK_StatusTypeDef CentralLock_SetPrevLockState(
+		CentralLock_t *_centralLock, LockState_t _prevLockState);
 
-void CentralLock_ClearCodeBuffer(CentralLock_t *_centralLock);
+CENTRALLOCK_StatusTypeDef CentralLock_ClearCodeBuffer(
+		CentralLock_t *_centralLock);
 
-CodeStatus_t CentralLock_GetCodeStatus(CentralLock_t *_centralLock);
+CENTRALLOCK_StatusTypeDef CentralLock_GetCodeStatus(CentralLock_t *_centralLock);
 
-uint16_t CentralLock_DecryptCode(CentralLock_t *_centralLock);
+CENTRALLOCK_StatusTypeDef CentralLock_DecryptCode(CentralLock_t *_centralLock,
+		uint16_t *_decryptedCode);
 
-void CentralLock_ChangeModuleLedState(CentralLock_t *_centralLock,
-		ModuleLedState_t _moduleLedState);
+CENTRALLOCK_StatusTypeDef CentralLock_ChangeModuleLedState(
+		CentralLock_t *_centralLock, ModuleLedState_t _moduleLedState);
 
-void CentralLock_SetPowerMode(CentralLock_t *_centralLock, PowerMode_t _mode);
+CENTRALLOCK_StatusTypeDef CentralLock_SetPowerMode(CentralLock_t *_centralLock,
+		PowerMode_t _mode);
 
-void CentralLock_SetCodeReceivedFlag(CentralLock_t *_centralLock,
-bool _codeReceivedFlag);
+CENTRALLOCK_StatusTypeDef CentralLock_SetCodeReceivedFlag(
+		CentralLock_t *_centralLock,
+		bool _codeReceivedFlag);
 
 #endif /* INC_CENTRAL_LOCK_H_ */

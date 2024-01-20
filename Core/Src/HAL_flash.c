@@ -20,6 +20,8 @@
 HAL_StatusTypeDef HAL_FlashStoreData(const uint8_t *_srcDataBuffer,
 		uint32_t _dataSize, uint32_t _flashStartAddress) {
 
+	HAL_StatusTypeDef status = HAL_OK;
+
 	uint8_t index = 0;
 
 	/*! <Convert the size of the byte-based data to a half-word-based size> */
@@ -33,13 +35,10 @@ HAL_StatusTypeDef HAL_FlashStoreData(const uint8_t *_srcDataBuffer,
 	/*! <Unlock the flash memory to unlock the FPEC(Flash program and erase controller) block(registers)> */
 	/*! <This block of registers handles the [program and erase] operations of the Flash memory.> */
 	/*! <We need to access the FLASH_CR register to access the PG bit.> */
-	HAL_FLASH_Unlock();
-
-	/*! <Variable to track the last operation status>*/
-	HAL_StatusTypeDef lastOpStatus = HAL_OK;
+	status = HAL_FLASH_Unlock();
 
 	/*! <Erase the Flash memory pages corresponding to the specified data size>*/
-	lastOpStatus = HAL_FlashErase(FLASH_TYPEERASE_PAGES, _flashStartAddress,
+	status = HAL_FlashErase(FLASH_TYPEERASE_PAGES, _flashStartAddress,
 			numPages);
 
 	/*!<Variable to track the index which the byte we read will be stored>*/
@@ -57,14 +56,14 @@ HAL_StatusTypeDef HAL_FlashStoreData(const uint8_t *_srcDataBuffer,
 		halfWord |= (((uint16_t) (_srcDataBuffer[dataSizeinBytes++]))
 				<< FLASH_BYTE_SIZE);
 		/*! <Program the half-word to the Flash memory at the specified address>*/
-		lastOpStatus = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
+		status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
 				_flashStartAddress + (FLASH_HALF_WORD_SIZE * index), halfWord);
 	}
 
 	/*! <Lock the Flash memory to disable write and erase operations> */
 	HAL_FLASH_OB_Lock();
 
-	return lastOpStatus;
+	return status;
 }
 
 /**
