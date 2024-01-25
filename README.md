@@ -10,7 +10,7 @@
    6. Buttons act as any of the inner door handles.
    7. The switch acts like any of the outer door handles.
 
-**The Hardwre consists of:**
+**The Software consists of:**
 
    1. central_lock.c and central_lock.h
    2. HAL_flash.c and HAL_flash.h
