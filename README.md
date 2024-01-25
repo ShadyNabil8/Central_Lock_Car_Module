@@ -1,5 +1,28 @@
 # Central Locking System
 
+**The Hardwre consists of:**
+
+   1. STM32F103C8T6 microcontroller
+   2. Arduino UNO acts as the transmitter of the keyless entry system.
+   3. Buttons act as mechanical kay to the car.
+   4. Button connected to the transmitter (Arduino) as the remote key
+   5. Alaram system (buzzer and LED)
+   6. Buttons act as any of the inner door handles.
+   7. The switch acts like any of the outer door handles.
+
+**The Hardwre consists of:**
+
+   1. central_lock.c and central_lock.h
+   2. HAL_flash.c and HAL_flash.h
+
+**The features provided by the module are:**
+
+   1. Lock and unlock the car mechanically.
+   2. Lock and unlock the car remotely (keyless).
+   3. Alarm in case of any threat.
+
+## Overview for the module
+
 1. **Purpose and benefit:**
 
    - Vehicle Central locking has the sole purpose of ```locking or unlocking``` all the doors in the car at the same time, via a ```remote``` or when the ```driver door locks```. It is a convenience feature, as well as a safety and security feature.
@@ -22,13 +45,14 @@
 
 I needed to use the dubugging feature all the time to see the data in different buffers and monitor the variables and the return status of different operations. And that makes it easier to discover any errors that occurred during the development. Also, it helped me to see the content of the registers to be aware of the current state of the MCU and check if the change that I made took place or not. The debugging was very helpful for me in this project.
 
-## 2. Dealing with flash memory in STM32F103C8T6 and Arduino UNO
-
-In a stage in the code, I nedded to use the flash memory in STM32F103C8T (STM32F103C8T6 does not have an EEPRM) and the EEPROM in Arduino. So I developed a ```HAL_flash``` module (.c and.h) for the STM32F103C8T6 to make it easier to use the permanent storage. This module provides the basic flash functions like read, write and erase. In Arduino, the module already exists in the arduino framework.
-
 ## 3. SysTick timer in STM32F103C8T6
 
 I needed a stage in the code to know the time according to the processor, so after sailing through the STM32F103C8T6 drivers provided by STM and some searching, I found that I could use the SysTick timer to know the time according to the processor.
+
+## 3. Dealing with flash memory in STM32F103C8T6 and Arduino UNO
+
+In a stage in the code, I nedded to use the flash memory in STM32F103C8T (STM32F103C8T6 does not have an EEPRM) and the EEPROM in Arduino. So I developed a ```HAL_flash``` module (.c and.h) for the STM32F103C8T6 to make it easier to use the permanent storage. This module provides the basic flash functions like read, write and erase. In Arduino, the module already exists in the arduino framework.
+
 
 ## 4. Callback function
 
@@ -38,7 +62,7 @@ A callback function is a function that is passed as an argument to another funct
 
 There is no need to consume power while the central lock module is idle. So I used the sleep mode to save the power.
 
-# The challenges I faced
+# The challenges I needed to deal with
 
 ## Syncrhonozation between TX and RX
 

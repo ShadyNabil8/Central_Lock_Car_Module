@@ -170,7 +170,7 @@ const uint8_t APBPrescTable[8U] =  {0, 0, 0, 0, 1, 2, 3, 4};
   *         SystemCoreClock variable.
   * @note   This function should be used only after reset.
   * @param  None
-  * @retval None
+  * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
   */
 void SystemInit (void)
 {
@@ -219,7 +219,7 @@ void SystemInit (void)
   *         - The result of this function could be not correct when using fractional
   *           value for HSE crystal.
   * @param  None
-  * @retval None
+  * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
   */
 void SystemCoreClockUpdate (void)
 {
@@ -334,7 +334,7 @@ void SystemCoreClockUpdate (void)
   * @brief  Setup the external memory controller. Called in startup_stm32f1xx.s 
   *          before jump to __main
   * @param  None
-  * @retval None
+  * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
   */ 
 #ifdef DATA_IN_ExtSRAM
 /**
@@ -344,7 +344,7 @@ void SystemCoreClockUpdate (void)
   *         board (STM32 High density devices). This SRAM will be used as program
   *         data memory (including heap and stack).
   * @param  None
-  * @retval None
+  * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
   */ 
 void SystemInit_ExtMemCtl(void) 
 {

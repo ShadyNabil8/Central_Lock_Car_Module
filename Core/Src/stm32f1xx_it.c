@@ -56,8 +56,9 @@ volatile uint32_t lastDebounceTime = 0;
 
 /* External variables --------------------------------------------------------*/
 extern UART_HandleTypeDef huart1;
-extern CentralLock_t centralLock;
 /* USER CODE BEGIN EV */
+extern UART_HandleTypeDef huart1;
+extern CentralLock_t centralLock;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -226,6 +227,34 @@ void EXTI1_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles EXTI line2 interrupt.
+  */
+void EXTI2_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI2_IRQn 0 */
+
+  /* USER CODE END EXTI2_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(ALARM_Pin);
+  /* USER CODE BEGIN EXTI2_IRQn 1 */
+
+  /* USER CODE END EXTI2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles EXTI line3 interrupt.
+  */
+void EXTI3_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI3_IRQn 0 */
+
+  /* USER CODE END EXTI3_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(INSIDE_DOOR_ISR_Pin);
+  /* USER CODE BEGIN EXTI3_IRQn 1 */
+
+  /* USER CODE END EXTI3_IRQn 1 */
+}
+
+/**
   * @brief This function handles USART1 global interrupt.
   */
 void USART1_IRQHandler(void)
@@ -248,7 +277,7 @@ void USART1_IRQHandler(void)
  * @brief  Rx Transfer completed callbacks.
  * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
  *                the configuration information for the specified UART module.
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	/*
@@ -257,6 +286,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 	/*! <Enable the SysTick timer (source of time base) interrupts to resume the timing functionality> */
 	HAL_ResumeTick();
+	CentralLock_SetAlarmState(&centralLock, NOTACTIVE);
 	CentralLock_SetCodeReceivedFlag(&centralLock, true);
 	CentralLock_ReceiveCodeNonBlocking(&centralLock);
 }
@@ -274,7 +304,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			CentralLock_SetCurrentLockState(&centralLock, UNLOCKED);
 		else if (GPIO_Pin == LOCK_ISR_Pin)
 			CentralLock_SetCurrentLockState(&centralLock, LOCKED);
-		else {
+		else if ((GPIO_Pin == ALARM_Pin) || (GPIO_Pin == INSIDE_DOOR_ISR_Pin)) {
+			CentralLock_DetectingTheft(&centralLock);
 		}
 	}
 }

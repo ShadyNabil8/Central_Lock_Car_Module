@@ -20,7 +20,7 @@ extern UART_HandleTypeDef huart1;
  *         	5. It fetches the old sequence number from Flash memory.
  *          6. starts the process of receiving lock codes in a non-blocking manner.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 CENTRALLOCK_StatusTypeDef CentralLock_Init(CentralLock_t *_centralLock) {
 
@@ -31,14 +31,23 @@ CENTRALLOCK_StatusTypeDef CentralLock_Init(CentralLock_t *_centralLock) {
 	} else {
 		/*! <We should here check the door if it is locked or not> */
 		/*! <But for now it will be like this until I get more HW> */
-		_centralLock->currentLockState = LOCKED;
-		_centralLock->prevLockState = LOCKED;
+
+		//_centralLock->currentLockState = LOCKED;
+		CentralLock_GetCurrentPhyLockState(_centralLock,
+				&_centralLock->currentLockState);
+
+		CL_Status |= CentralLock_DoorChangeState(_centralLock,
+				_centralLock->currentLockState, KEY);
+
+		_centralLock->prevLockState = _centralLock->currentLockState;
 
 		_centralLock->powerMode = AWAKE;
 
 		_centralLock->codeReceivedFlag = false;
 
 		_centralLock->numOperations = 0;
+
+		_centralLock->alarmState = NOTACTIVE;
 
 		/*!<First, fetch the old sequence number from the flash memory>*/
 		uint8_t fetchOldCodeBuffer[SEQUENCE_NUMBER_LENGTH] = { 0 };
@@ -65,7 +74,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_Init(CentralLock_t *_centralLock) {
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
  * @param  _currentState: The new state of the doors (LOCKED or UNLOCKED).
  * @param  _stateChangeSource: The source of the state change (e.g., KEYLESS).
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 CENTRALLOCK_StatusTypeDef CentralLock_DoorChangeState(
 		CentralLock_t *_centralLock, LockState_t _currentState,
@@ -115,7 +124,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_DoorChangeState(
  *         It leverages the Hardware Abstraction Layer (HAL) provided by STMicroelectronics.
  *         Upon reception, the code is stored in the internal buffer of the Central Lock module.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 CENTRALLOCK_StatusTypeDef CentralLock_ReceiveCodeNonBlocking(
 		CentralLock_t *_centralLock) {
@@ -142,7 +151,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_ReceiveCodeNonBlocking(
  * @note   This function sets the current lock state of the central lock module to the provided state.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
  * @param  _currentLockState: The new current lock state to be set (LOCKED or UNLOCKED).
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 CENTRALLOCK_StatusTypeDef CentralLock_SetCurrentLockState(
 		CentralLock_t *_centralLock, LockState_t _currentLockState) {
@@ -162,7 +171,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_SetCurrentLockState(
  * @note   This function sets the previous lock state of the central lock module to the provided state.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
  * @param  _prevLockState: The new previous lock state to be set (LOCKED or UNLOCKED).
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 CENTRALLOCK_StatusTypeDef CentralLock_SetPrevLockState(
 		CentralLock_t *_centralLock, LockState_t _prevLockState) {
@@ -180,7 +189,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_SetPrevLockState(
  * @note   This function clears the internal code buffer of the central lock module by setting
  *         each element to the null character ('\0').
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 CENTRALLOCK_StatusTypeDef CentralLock_ClearCodeBuffer(
 		CentralLock_t *_centralLock) {
@@ -203,7 +212,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_ClearCodeBuffer(
  *         headers, decryption, and sequence number validation. It returns the status indicating
  *         whether the code is valid, invalid, or out of range.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
- * @retval CodeStatus_t: Status of the received lock code (VALID, UNVALID, or OUT_OF_RANGE).
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) CodeStatus_t: Status of the received lock code (VALID, UNVALID, or OUT_OF_RANGE).
  */
 CENTRALLOCK_StatusTypeDef CentralLock_GetCodeStatus(CentralLock_t *_centralLock) {
 
@@ -218,11 +227,9 @@ CENTRALLOCK_StatusTypeDef CentralLock_GetCodeStatus(CentralLock_t *_centralLock)
 						|| (_centralLock->CodeBuffer[CODE_LENGTH - 1 - i]
 								!= CodeHeaders[3 - i])) {
 					CL_Status |= CENTRALLOCK_UNVALID_CODE;
-
 				}
 			}
 		}
-
 		uint16_t decryptedSequenceNumber;
 
 		CL_Status |= CentralLock_DecryptCode(_centralLock,
@@ -245,7 +252,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_GetCodeStatus(CentralLock_t *_centralLock)
  * @note   This function decrypts the received lock code from the code buffer
  *         to obtain the sequence number.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
- * @retval uint16_t: The decrypted sequence number.
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) uint16_t: The decrypted sequence number.
  */
 CENTRALLOCK_StatusTypeDef CentralLock_DecryptCode(CentralLock_t *_centralLock,
 		uint16_t *_decryptedCode) {
@@ -274,7 +281,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_DecryptCode(CentralLock_t *_centralLock,
  *         the LED will be set to the provided state.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
  * @param  _moduleLedState: The desired state of the module's LED (MODULE_LED_ON, MODULE_LED_OFF, MODULE_LED_BLINK).
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 CENTRALLOCK_StatusTypeDef CentralLock_ChangeModuleLedState(
 		CentralLock_t *_centralLock, ModuleLedState_t _moduleLedState) {
@@ -307,7 +314,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_ChangeModuleLedState(
  * @note   This function sets the power mode of the central lock module to the specified mode.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
  * @param  _mode: The desired power mode to be set (SLEEP, AWAKE).
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 CENTRALLOCK_StatusTypeDef CentralLock_SetPowerMode(CentralLock_t *_centralLock,
 		PowerMode_t _mode) {
@@ -327,7 +334,7 @@ CENTRALLOCK_StatusTypeDef CentralLock_SetPowerMode(CentralLock_t *_centralLock,
  *         based on the provided flag value.
  * @param  _centralLock: Pointer to the CentralLock_t structure representing the central lock module.
  * @param  _codeReceivedFlag: The flag indicating whether a code has been received (true) or not (false).
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE)
  */
 CENTRALLOCK_StatusTypeDef CentralLock_SetCodeReceivedFlag(
 		CentralLock_t *_centralLock,
@@ -338,6 +345,61 @@ CENTRALLOCK_StatusTypeDef CentralLock_SetCodeReceivedFlag(
 		CL_Status = CENTRALLOCK_ERROR;
 	} else {
 		_centralLock->codeReceivedFlag = _codeReceivedFlag;
+	}
+	return CL_Status;
+}
+
+CENTRALLOCK_StatusTypeDef CentralLock_GetCurrentPhyLockState(
+		CentralLock_t *_centralLock, LockState_t *_currentLockState) {
+
+	CENTRALLOCK_StatusTypeDef CL_Status = CENTRALLOCK_OK;
+
+	if (IS_NULL(_centralLock)) {
+		CL_Status = CENTRALLOCK_ERROR;
+	} else {
+		if (HAL_GPIO_ReadPin(DOOR_PHYSICAL_STATE_GPIO_Port,
+		DOOR_PHYSICAL_STATE_Pin) == GPIO_PIN_SET) {
+			*_currentLockState = UNLOCKED;
+		} else {
+			*_currentLockState = LOCKED;
+		}
+	}
+	return CL_Status;
+}
+
+CENTRALLOCK_StatusTypeDef CentralLock_SetAlarmState(CentralLock_t *_centralLock,
+		AlarmState_t _alarmState) {
+	CENTRALLOCK_StatusTypeDef CL_Status = CENTRALLOCK_OK;
+	if (IS_NULL(_centralLock) || !IS_ALARM_STATE(_alarmState)) {
+		CL_Status = CENTRALLOCK_ERROR;
+	} else {
+		_centralLock->alarmState = _alarmState;
+	}
+	return CL_Status;
+
+}
+CENTRALLOCK_StatusTypeDef CentralLock_StartAlarm(CentralLock_t *_centralLock) {
+	CENTRALLOCK_StatusTypeDef CL_Status = CENTRALLOCK_OK;
+	if (IS_NULL(_centralLock)) {
+		CL_Status = CENTRALLOCK_ERROR;
+	} else {
+		CentralLock_DoorChangeState(_centralLock, LOCKED, KEY);
+		CentralLock_SetAlarmState(_centralLock, ACTIVE);
+	}
+	return CL_Status;
+}
+
+CENTRALLOCK_StatusTypeDef CentralLock_DetectingTheft(
+		CentralLock_t *_centralLock) {
+	CENTRALLOCK_StatusTypeDef CL_Status = CENTRALLOCK_OK;
+	if (IS_NULL(_centralLock)) {
+		CL_Status = CENTRALLOCK_ERROR;
+	} else {
+		if (_centralLock->currentLockState == LOCKED) {
+			CentralLock_StartAlarm(_centralLock);
+		} else {
+
+		}
 	}
 	return CL_Status;
 }

@@ -15,7 +15,7 @@
  * @param  _srcDataBuffer: Pointer to the source data buffer.
  * @param  _dataSize: Size of the data to be stored (in bytes).
  * @param  _flashStartAddress: Starting address in Flash memory where the data will be written.
- * @retval HAL_StatusTypeDef: Status of the last Flash operation.
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) HAL_StatusTypeDef: Status of the last Flash operation.
  */
 HAL_StatusTypeDef HAL_FlashStoreData(const uint8_t *_srcDataBuffer,
 		uint32_t _dataSize, uint32_t _flashStartAddress) {
@@ -74,7 +74,7 @@ HAL_StatusTypeDef HAL_FlashStoreData(const uint8_t *_srcDataBuffer,
  * @param  _destDataAddress: Pointer to the destination buffer where the read data will be stored.
  * @param  _numberOfBytes: Number of bytes to read from Flash memory.
  * @param  _startReadAddress: Starting address in Flash memory from where the reading will commence.
- * @retval None
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) None
  */
 void HAL_FlashReadData(uint8_t *_destDataAddress, uint32_t _numberOfBytes,
 		uint32_t _startReadAddress) {
@@ -113,7 +113,7 @@ void HAL_FlashReadData(uint8_t *_destDataAddress, uint32_t _numberOfBytes,
  * @param  _typeErase: Type of erasure (Mass erase or page erase).
  * @param  _eraseStartAddress: Starting address in Flash memory where the erasure will commence.
  * @param  _numOfPages: Number of consecutive Flash memory pages to be erased.
- * @retval HAL_StatusTypeDef: Status of the last Flash erase operation.
+ * @retval Operation status which can be (CENTRALLOCK_OK, CENTRALLOCK_ERROR, CENTRALLOCK_UNVALID_CODE, CENTRALLOCK_OUTOFRANGE_CODE) HAL_StatusTypeDef: Status of the last Flash erase operation.
  */
 HAL_StatusTypeDef HAL_FlashErase(uint32_t _typeErase,
 		uint32_t _eraseStartAddress, uint32_t _numOfPages) {

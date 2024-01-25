@@ -29,8 +29,10 @@
 
 #define MODULE_BUILT_IN_LOW  1
 
+#define MODULE_ENEBLE_SLEEP 0
+
 /*! <Carry the maximum number of lock/unlock operation before storing the sequence number in the flash memory>*/
-#define MAX_NUMBER_OPERATIONS 20
+#define MAX_NUMBER_OPERATIONS 50
 
 /*! <If the difference between the sequence number fetcher from the car key and the current sequence number is
  * greater than 99, then the code is not valid and the module will not unlock the car for security purpose,
@@ -55,6 +57,8 @@
 #define IS_CHANGE_STATE_SRC(SRC) ((SRC == KEY) || (SRC == KEYLESS))
 
 #define IS_POWER_MODE(MODE) ((MODE == AWAKE) || (MODE == SLEEP))
+
+#define IS_ALARM_STATE(STATE) ((STATE == ACTIVE) || (STATE == NOTACTIVE))
 
 /* Section typedefines -------------------------------------------------------------*/
 /**
@@ -87,6 +91,10 @@ typedef enum {
 	KEY, KEYLESS
 } StateChangeSource_t;
 
+typedef enum {
+	ACTIVE, NOTACTIVE
+} AlarmState_t;
+
 typedef struct {
 	/*! <Variable to carry the current lock state of the car (locked or unlocked)>*/
 	LockState_t currentLockState;
@@ -102,6 +110,8 @@ typedef struct {
 	uint8_t CodeBuffer[CODE_LENGTH];
 	/*! <Variable to carry the current sequence number that is synchronized with the car key>*/
 	uint16_t currentSequenceNumber;
+
+	AlarmState_t alarmState;
 } CentralLock_t;
 
 /* Section Functions prototypes -------------------------------------------------------------*/
@@ -114,11 +124,17 @@ CENTRALLOCK_StatusTypeDef CentralLock_DoorChangeState(
 CENTRALLOCK_StatusTypeDef CentralLock_ReceiveCodeNonBlocking(
 		CentralLock_t *_centralLock);
 
+CENTRALLOCK_StatusTypeDef CentralLock_GetCurrentPhyLockState(
+		CentralLock_t *_centralLock, LockState_t *_currentLockState);
+
 CENTRALLOCK_StatusTypeDef CentralLock_SetCurrentLockState(
 		CentralLock_t *_centralLock, LockState_t _currentLockState);
 
 CENTRALLOCK_StatusTypeDef CentralLock_SetPrevLockState(
 		CentralLock_t *_centralLock, LockState_t _prevLockState);
+
+CENTRALLOCK_StatusTypeDef CentralLock_SetAlarmState(CentralLock_t *_centralLock,
+		AlarmState_t _alarmState);
 
 CENTRALLOCK_StatusTypeDef CentralLock_ClearCodeBuffer(
 		CentralLock_t *_centralLock);
@@ -137,5 +153,9 @@ CENTRALLOCK_StatusTypeDef CentralLock_SetPowerMode(CentralLock_t *_centralLock,
 CENTRALLOCK_StatusTypeDef CentralLock_SetCodeReceivedFlag(
 		CentralLock_t *_centralLock,
 		bool _codeReceivedFlag);
+
+CENTRALLOCK_StatusTypeDef CentralLock_StartAlarm(CentralLock_t *_centralLock);
+
+CENTRALLOCK_StatusTypeDef CentralLock_DetectingTheft(CentralLock_t *_centralLock);
 
 #endif /* INC_CENTRAL_LOCK_H_ */

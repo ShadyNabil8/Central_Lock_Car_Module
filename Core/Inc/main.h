@@ -65,6 +65,14 @@ void Error_Handler(void);
 #define LOCK_ISR_Pin GPIO_PIN_1
 #define LOCK_ISR_GPIO_Port GPIOA
 #define LOCK_ISR_EXTI_IRQn EXTI1_IRQn
+#define ALARM_Pin GPIO_PIN_2
+#define ALARM_GPIO_Port GPIOA
+#define ALARM_EXTI_IRQn EXTI2_IRQn
+#define INSIDE_DOOR_ISR_Pin GPIO_PIN_3
+#define INSIDE_DOOR_ISR_GPIO_Port GPIOA
+#define INSIDE_DOOR_ISR_EXTI_IRQn EXTI3_IRQn
+#define DOOR_PHYSICAL_STATE_Pin GPIO_PIN_11
+#define DOOR_PHYSICAL_STATE_GPIO_Port GPIOB
 #define DOOR0_Pin GPIO_PIN_12
 #define DOOR0_GPIO_Port GPIOB
 #define DOOR1_Pin GPIO_PIN_13
@@ -73,6 +81,10 @@ void Error_Handler(void);
 #define DOOR2_GPIO_Port GPIOB
 #define DOOR3_Pin GPIO_PIN_15
 #define DOOR3_GPIO_Port GPIOB
+#define ALARM_LED_Pin GPIO_PIN_8
+#define ALARM_LED_GPIO_Port GPIOA
+#define BUZZER_Pin GPIO_PIN_11
+#define BUZZER_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
