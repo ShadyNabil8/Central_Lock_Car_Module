@@ -1,5 +1,7 @@
 # Central Locking System
 
+![GIF](HW.gif)
+
 **The Hardwre consists of:**
 
    1. STM32F103C8T6 microcontroller
